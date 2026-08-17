@@ -1,0 +1,1084 @@
+---
+title: "Introduction to Data Science"
+subtitle: "Session 1: What is data science?"
+author: "Simon Munzert"
+institute: "Hertie School | [GRAD-C11/E1339](https://github.com/intro-to-data-science-25)" #"`r format(Sys.time(), '%d %B %Y')`"
+output:
+  xaringan::moon_reader:
+    includes:
+      after_body: "add_hertie_logo.html"
+      in_header: "my_header.html"
+    css: [default,'simons-touch.css', metropolis, metropolis-fonts] 
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: '16:9'
+      hash: true
+---
+
+class: inverse, center, middle
+name: welcome
+
+```{css, echo=FALSE} 
+@media print { # print out incremental slides; see https://stackoverflow.com/questions/56373198/get-xaringan-incremental-animations-to-print-to-pdf/56374619#56374619
+  .has-continuation {
+    display: block !important;
+  }
+}
+```
+
+```{r setup, include=FALSE}
+# figures formatting setup
+options(htmltools.dir.version = FALSE)
+library(knitr)
+opts_chunk$set(
+  prompt = T,
+  fig.align="center", #fig.width=6, fig.height=4.5, 
+  # out.width="748px", #out.length="520.75px",
+  dpi=300, #fig.path='Figs/',
+  cache=T, #echo=F, warning=F, message=F
+  engine.opts = list(bash = "-l")
+  )
+
+## Next hook based on this SO answer: https://stackoverflow.com/a/39025054
+knit_hooks$set(
+  prompt = function(before, options, envir) {
+    options(
+      prompt = if (options$engine %in% c('sh','bash')) '$ ' else 'R> ',
+      continue = if (options$engine %in% c('sh','bash')) '$ ' else '+ '
+      )
+})
+
+library(tidyverse)
+library(hrbrthemes)
+library(fontawesome)
+```
+
+
+
+
+# Welcome!
+<html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
+
+---
+
+# Introductions
+
+### Course
+
+`r fa('globe')` https://github.com/intro-to-data-science-25
+
+Much of this course lives on GitHub. You will find lecture materials, code, assignments, and other people's presentations there. We also have Moodle, which is is for everything else.
+
+--
+
+### Me
+
+`r fa('address-book')` I'm [Simon Munzert](https://simonmunzert.github.io/) [si’mən munsɜrt], or just Simon [saɪmən].
+
+`r fa('envelope')` [munzert@hertie-school.org](mailto:munzert@hertie-school.org)
+
+`r fa('graduation-cap')` Professor of Data Science and Public Policy | Director of the Data Science Lab
+
+--
+
+### You
+
+Let's find out!
+
+---
+
+# More about you
+
+<div align="center">
+<br>
+<img src="pics/r-knowledge-perc.png" height=500>
+</div>
+
+
+
+---
+
+# The labs
+
+.pull-left-wide[
+
+## Who & how
+
+- This course is accompanied by labs administered by **Carol Sobral** and **Killian Conyngham**.
+- The labs are mandatory (MDS) / optional (the rest). Please attend them in any case.
+- As with the regular classes, please stick to the lab you are assigned to.
+
+## What for
+
+- What these sessions are meant for:
+  - Applying tools in practice
+  - Discussion of issues related to the assignments
+  - Boosting your R skills
+- What these sessions are **not** meant for: 
+  - Solving the assignments for you
+  - Taking care of developing your coding skills
+]
+
+.pull-right-small-center[
+<div align="center">
+<br>
+<img src="pics/carol-circle.png" height=200>
+<br>
+<br>
+<img src="pics/killian-circle.png" height=200>
+</div>
+]
+
+
+---
+
+# Class etiquette
+
+.pull-left-wide[
+<br>
+
+- Learning how to code can be challenging and might lead you out of your comfort zone. If you have problems with the pace of the course, let me and the TAs know. I expect your commitment to the class, but **I do not want anyone to fail.**
+- You are all genuinely interested in data science. But there is also considerable variation in your backgrounds. This is how we like it! Some sessions will be more informative for you than others. If you feel bored, **look out for and help others**, or explore other corners of R you don't know yet.
+- **Be respectful** to each other, all the time. This includes the TAs and me.
+- **Ask questions** whenever you feel the need to do so!
+]
+
+.pull-right-small-center[
+<div align="center">
+<br><br>
+<img src="pics/stupid-questions.jpg" height=400>
+</div>
+]
+
+---
+
+# Table of contents
+
+</br></br>
+
+1. [Welcome!](#welcome)
+
+2. [What is data science?](#whatisdatascience)
+
+3. [(Data) science for public policy](#datasciencepublicpolicy)
+
+4. [Class logistics](#logistics)
+
+
+---
+class: inverse, center, middle
+name: whatisdatascience
+
+# What is data science?
+<html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
+
+
+---
+
+# What you think data science entails
+
+.pull-left[
+<div align="center">
+<br><b>MPP/MIA/PhD</b>
+<br>
+<img src="pics/wordcloud-mpp.png" height=400>
+</div>
+]
+
+.pull-right[
+<div align="center">
+<br><b>MDS</b>
+<br>
+<img src="pics/wordcloud-mds.png" height=400>
+</div>
+]
+
+---
+
+# What you think data science entails
+
+.pull-left[
+<div align="center">
+<br><b>MPP/MIA/PhD</b>
+<br>
+<img src="pics/terms_freq_mpp.png" height=400>
+</div>
+]
+
+.pull-right[
+<div align="center">
+<br><b>MDS</b>
+<br>
+<img src="pics/terms_freq_mds.png" height=400>
+</div>
+]
+
+
+
+---
+#Definitions of data science
+
+.pull-left[
+## What is data science?
+
+> "Data science is an **interdisciplinary academic field** that uses statistics, scientific computing, scientific methods, processes, algorithms and systems to extract or extrapolate knowledge and insights from potentially noisy, structured, or unstructured data." - [Wikipedia](https://en.wikipedia.org/wiki/Data_science)
+
+> "Data science is a concept to **unify statistics, data analysis, informatics**, and their related methods to understand and analyze actual phenomena with data." - [Chikio Hayashi](https://www.springer.com/book/9784431702085) 
+
+> "Data science encompasses a **set of principles**, problem definitions, algorithms, and processes for **extracting nonobvious and useful patterns from large data sets**." - [John Kelleher and Brendan Tierney](https://mrce.in/ebooks/Data%20Science.pdf)
+]
+
+--
+
+.pull-right[
+## A working definition
+
+<div align="center"><br>
+<img src="pics/venn-orig-crop.png" height=400>
+</div>
+
+`Source` [Drew Conway, 2010](https://drewconway.com/zia/2013/3/26/the-data-science-venn-diagram) (adapted)
+]
+
+
+
+---
+
+# The data science pipeline
+
+.pull-left[
+
+## Preparatory work
+
+- **Problem definition** predict, infer, describe
+- **Design** conceptualize, build data collection device
+- **Data collection** recruit, collect, monitor
+
+]
+
+---
+
+# The data science pipeline
+
+.pull-left[
+
+## Preparatory work
+
+- **Problem definition** predict, infer, describe
+- **Design** conceptualize, build data collection device
+- **Data collection** recruit, collect, monitor
+
+## Data operation
+
+]
+
+.pull-right-center[
+<br><br><br>
+<div align="center">
+<img src="pics/data-science-flow.png" height=200>
+</div>
+]
+
+---
+
+# The data science pipeline
+
+.pull-left[
+
+## Preparatory work
+
+  - **Problem definition** predict, infer, describe
+  - **Design** conceptualize, build data collection device
+  - **Data collection** recruit, collect, monitor
+
+## Data operation
+
+   - **Wrangle**: import, tidy, manipulate
+   
+]
+
+.pull-right-center[
+<br><br><br>
+<div align="center">
+<img src="pics/data-science-wrangle.png" height=200>
+</div>
+]
+
+
+---
+
+# The data science pipeline
+
+.pull-left[
+
+## Preparatory work
+
+  - **Problem definition** predict, infer, describe
+  - **Design** conceptualize, build data collection device
+  - **Data collection** recruit, collect, monitor
+
+## Data operation
+
+   - **Wrangle**: import, tidy, manipulate
+   - **Explore**: visualize, describe, discover
+
+
+]
+
+.pull-right-center[
+<br><br><br>
+<div align="center">
+<img src="pics/data-science-explore.png" height=200>
+</div>
+]
+
+
+---
+
+# The data science pipeline
+
+.pull-left[
+
+## Preparatory work
+
+  - **Problem definition** predict, infer, describe
+  - **Design** conceptualize, build data collection device
+  - **Data collection** recruit, collect, monitor
+
+## Data operation
+
+   - **Wrangle**: import, tidy, manipulate
+   - **Explore**: visualize, describe, discover
+   - **Model**: build, test, infer, predict
+
+
+
+]
+
+.pull-right-center[
+<br><br><br>
+<div align="center">
+<img src="pics/data-science-model.png" height=200>
+</div>
+]
+
+
+---
+
+# The data science pipeline
+
+.pull-left[
+
+## Preparatory work
+
+  - **Problem definition** predict, infer, describe
+  - **Design** conceptualize, build data collection device
+  - **Data collection** recruit, collect, monitor
+
+## Data operation
+
+   - **Wrangle**: import, tidy, manipulate
+   - **Explore**: visualize, describe, discover
+   - **Model**: build, test, infer, predict
+
+## Dissemination
+
+  - **Communicate**: to the public, media, policymakers
+  - **Publish**: journals/proceedings, blogs, software
+  - **Productize**: make usable, robust, scalable
+
+
+]
+
+.pull-right-center[
+<br><br><br>
+<div align="center">
+<img src="pics/data-science-communicate.png" height=200>
+</div>
+]
+
+
+---
+
+# The data science pipeline
+
+.pull-left[
+
+## Preparatory work
+
+  - **Problem definition** predict, infer, describe
+  - **Design** conceptualize, build data collection device
+  - **Data collection** recruit, collect, monitor
+
+## Data operation
+
+   - **Wrangle**: import, tidy, manipulate
+   - **Explore**: visualize, describe, discover
+   - **Model**: build, test, infer, predict
+
+## Dissemination
+
+  - **Communicate**: to the public, media, policymakers
+  - **Publish**: journals/proceedings, blogs, software
+  - **Productize**: make usable, robust, scalable
+
+**Meta skill: programming**
+
+]
+
+.pull-right-center[
+<br><br><br>
+<div align="center">
+<img src="pics/data-science-program.png" height=200>
+</div>
+]
+
+
+
+---
+
+# The data science pipeline
+
+.pull-left[
+
+## Preparatory work
+
+  - **Problem definition** predict, infer, describe
+  - **Design** conceptualize, build data collection device
+  - **Data collection** recruit, collect, monitor
+
+## Data operation
+
+   - **Wrangle**: import, tidy, manipulate
+   - **Explore**: visualize, describe, discover
+   - **Model**: build, test, infer, predict
+
+## Dissemination
+
+  - **Communicate**: to the public, media, policymakers
+  - **Publish**: journals/proceedings, blogs, software
+  - **Productize**: make usable, robust, scalable
+
+**Meta skill: programming with R**
+]
+
+.pull-right-center[
+<br><br>
+<div align="center">
+<img src="pics/armyknife2.jpg" height=350>
+</div>
+]
+
+
+
+---
+class: inverse, center, middle
+name: datasciencepublicpolicy
+
+# (Data) science for public policy
+
+<html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
+
+
+
+---
+# Types of data-driven research and their role for policy
+
+.pull-left-small2[
+## 1. Description
+- What is the state of the world?
+- What are the trends over time?
+- What are the differences between groups?
+
+## The value for policy-making
+- At the center of **monitoring**
+- "How many people consume misinformation online?"
+- "How many people are unemployed in a certain district?"
+- "How does the distribution of income vary across educational segments of the population?"
+]
+
+--
+
+.pull-left-small2[
+## 2. Explanation
+- What is the effect of a policy?
+- Does the effect vary across groups?
+- What are the mechanisms behind the effect?
+
+## The value for policy-making
+- At the center of **evaluation**
+- "Did the wage increase lead to a decrease in employment?"
+- "Did the campaign affect the exposure to misinformation differently across groups?"
+- "Why did the intervention not lead to the expected results?"
+]
+
+--
+
+.pull-left-small2[
+## 3. Prediction
+- What is the path of an indicator?
+- (When) will future events happen?
+- What class does this observation most likely belong to?
+
+
+## The value for policy-making
+- At the center of **forecasting** but also **targeting** and **measurement**
+- "Will there be conflict?"
+- "How many people will be unemployed in a certain district next year?"
+- "Which individuals are most likely to be affected by a policy?"
+]
+
+
+---
+# The MIT Billion Prices Project
+
+.pull-left[
+<div align="center">
+<img src="pics/billion-prices-0.png" height=500>
+</div>
+]
+
+.pull-right[
+<div align="center">
+<img src="pics/billion-prices-1.png" height=500>
+</div>
+]
+
+<br>
+**See also:** [https://thebillionpricesproject.com/](https://thebillionpricesproject.com/) and [https://www.pricestats.com/](https://www.pricestats.com/)
+
+---
+# The MIT Billion Prices Project
+
+.pull-left[
+<div align="center">
+<img src="pics/billion-prices-0.png" height=500>
+</div>
+]
+
+.pull-right[
+<div align="center">
+<img src="pics/billion-prices-2.png" height=500>
+</div>
+]
+
+<br>
+**See also:** [https://thebillionpricesproject.com/](https://thebillionpricesproject.com/) and [https://www.pricestats.com/](https://www.pricestats.com/)
+
+
+---
+# The COMPAS algorithm to predict criminals' recidivism
+
+.pull-left[
+## Background
+
+- Correctional Offender Management Profiling for Alternative Sanctions (COMPAS) is a decision support tool developed by Northpointe (now Equivant) used by U.S. courts to **assess the likelihood of recidivism**
+- Produced several scales (Pretrial release risk, General recidivism, Violent recidivism) based on factors such as age, criminal history, and substance abuse
+- The algorithm is proprietary and its inner workings are not public
+
+<br>
+
+`Source` [Practitioner's Guide to COMPAS Core](https://s3.documentcloud.org/documents/2840784/Practitioner-s-Guide-to-COMPAS-Core.pdf)
+]
+
+.pull-right[
+<div align="center">
+<img src="pics/compas-practitioner-1.png" width=450>
+<img src="pics/compas-practitioner-2.png" width=450>
+<img src="pics/compas-practitioner-3.png" width=450>
+</div>
+]
+
+
+---
+# The COMPAS algorithm to predict criminals' recidivism
+
+.pull-left[
+## The ProPublica and other investigations
+
+- In 2016, ProPublica published an investigation showing that COMPAS was **biased against African Americans**
+- **Bias:** The algorithm was more likely for African Americans to wrongly predict that defendants would re-offend.
+- **Accuracy:** only 20% of people predicted to commit violent crimes actually went on to do so (in a later study estimated with 65%, still worse than a group of humans with little expertise)
+
+<br><br><br>
+`Source` [ProPublica 2016](https://www.propublica.org/article/how-we-analyzed-the-compas-recidivism-algorithm)
+]
+
+.pull-right[
+<div align="center">
+<img src="pics/machine-bias-compas.png" width=450>
+</div>
+]
+
+
+---
+# The COMPAS algorithm to predict criminals' recidivism
+
+.pull-left[
+## The ProPublica and other investigations
+
+- In 2016, ProPublica published an investigation showing that COMPAS was **biased against African Americans**
+- **Bias:** The algorithm was more likely for African Americans to wrongly predict that defendants would re-offend.
+- **Accuracy:** only 20% of people predicted to commit violent crimes actually went on to do so (in a later study estimated with 65%, still worse than a group of humans with little expertise)
+
+<br><br><br><br>
+
+`Source` [Dressel and Fair, 2018, Science Advances](https://www.science.org/doi/epdf/10.1126/sciadv.aao5580)
+]
+
+.pull-right[
+<div align="center">
+<img src="pics/dressel-compas-1.png" width=500>
+<img src="pics/dressel-compas-2.png" width=385>
+</div>
+]
+
+
+---
+# The Meta US 2020 Election study
+
+.pull-left-center[
+<div align="center">
+<br><br>
+<img src="pics/facebook-us2020-2.png" width=500>
+</div>
+]
+
+.pull-right-center[
+<div align="center">
+<br><br>
+<img src="pics/facebook-us2020-3.png" width=500>
+</div>
+]
+
+---
+# The Meta US 2020 Election study
+
+.pull-left[
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+`Source` [Guess et al. 2023, Science](https://www.science.org/doi/epdf/10.1126/science.abp9364)
+]
+
+.pull-right[
+<div align="center">
+<img src="pics/facebook-us2020-guess-1.png" width=500>
+</div>
+]
+
+
+---
+# The Meta US 2020 Election study
+
+.pull-left-small[
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+`Source` [Guess et al. 2023, Science](https://www.science.org/doi/epdf/10.1126/science.abp9364)
+]
+
+.pull-right-wide[
+<div align="center">
+<img src="pics/facebook-us2020-guess-2.png" width=700>
+</div>
+]
+
+
+
+---
+class: inverse, center, middle
+name: logistics
+
+# Class logistics
+<html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
+
+---
+background-image: url("pics/harry-ron-hermione-start.jpeg")
+background-size: contain
+background-color: #000000
+
+# You at the beginning of the course
+
+
+---
+background-image: url("pics/harry-ron-hermione-end.jpeg")
+background-size: contain
+background-color: #000000
+
+# You at the end of the course
+
+
+
+---
+
+# Introduction to Data Science in a nutshell
+
+<div align="center">
+<img src="pics/ids-syllabus-2025.png" height=520>
+</div>
+
+
+
+
+
+
+---
+class: center
+background-color: #fff
+
+# Why R?
+
+<div align="center">
+<br>
+<img src="pics/hex-tidyverse.gif" height=500>
+</div>
+
+
+
+---
+
+# Why R and RStudio?
+
+### Data science positivism
+
+- Alongside Python, R has become the *de facto* language for data science.
+  - See: [*The Impressive Growth of R*](https://stackoverflow.blog/2017/10/10/impressive-growth-r/), [*The Popularity of Data Science Software*](http://r4stats.com/articles/popularity/)
+- Open-source (free!) with a global user-base spanning academia and industry.
+  - "Do you want to be a profit source or a cost center?"
+
+--
+
+### Bridge to multiple other programming environments, with statistics at heart
+
+- Already has all of the statistics support, and is amazingly adaptable as a “glue” language to other
+programming languages and APIs.
+- The RStudio IDE and ecosystem allow for further, seemless integration.
+
+--
+
+### Path dependency
+
+- It's also the language that I know best.
+- (Learning multiple languages is a good idea, though.)
+
+
+
+---
+# Why R and RStudio? (cont.)
+
+```{R, indeeddotcom, echo = F, fig.height = 7, fig.width = 11, dev = "svg", warning = F}
+# The popularity data
+pop_df = 
+  data.frame(
+  lang = c("Python", "SQL", "R", "SAS", "Matlab", "Julia", "SPSS", "Stata"),
+  #n_jobs = c(6850, 6136, 4384, 551, 537, 249, 110, 60), # 2024/09/01 -> not possible anymore - they don't provide precise numbers!
+  n_jobs = c(6850, 6136, 4384, 551, 537, 249, 110, 60), # 2023/09/01
+  #n_jobs = c(12203, 10291, 6812, 1005, 838, 474, 296, 67), # 2022/09/03
+  #n_jobs = c(8150, 7264, 3484, 950, 687, 270, 74), # 2021/08/27
+  #n_jobs = c(99756, 132860, 41242, 31943, NA, 4843, 2302),
+  free = c(T, T, T, F, F, T, F, F)
+  )
+## Plot it
+pop_df %>% 
+  mutate(lang = lang %>% factor(ordered = T)) %>%
+  ggplot(aes(x = lang, y = n_jobs, fill = free)) +
+  geom_col() +
+  geom_hline(yintercept = 0) +
+  aes(x = reorder(lang, -n_jobs), fill = reorder(free, -free)) +
+  xlab("Statistical language") +
+  scale_y_continuous(label = scales::comma) +
+  ylab("Number of jobs") +
+  labs(
+    title = "Comparing statistical languages",
+    subtitle = "Number of job postings for '<language> data' on de.indeed.com, 2023/09/01"
+    ) +
+  scale_fill_manual(
+    "Free of charge?",
+    labels = c("True", "False"),
+    values = c("#f92672", "darkslategray")
+    ) +
+  ggthemes::theme_pander(base_size = 17) +
+  # theme_ipsum() +
+  theme(legend.position = "bottom")
+```
+
+
+---
+# Why R and RStudio? (cont.)
+
+<div align="center">
+<img src="pics/facebook-programming-languages.png" width=550>
+</div>
+`Credit` [Left_Ad8361/Reddit](https://www.reddit.com/r/dataisbeautiful/comments/qw1bew/oc_which_programming_language_is_required_to_land/)
+
+
+---
+# Attendance
+
+## General rules
+
+- You cannot miss more than two sessions. If you have to miss a session for medical reasons or personal emergencies, please **inform Examination Office** and they will inform me about your absence.
+- I **don't want you to notify me about absences** in advance or ex post.
+- We will check attendance on-site.
+
+
+## Office hours and advice
+
+- If you want to discuss content from class, first do so in with your Lab TA. 
+- If you want to discuss something with the entire group, use the Moodle forum.
+- If you want to discuss something with me, please sign up for a slot in my office hours (link on Moodle).
+- For general technical advice, the [Research Consulting Team at the Data Science Lab](https://hertie-data-science-lab.github.io/research-consulting/) is there for you.
+
+
+
+---
+# Assignments and grading
+
+| Component                           | Weight |
+|:-|-:|
+| 3(4) × homework assignments | pass/fail |
+| 4(5) × online quizzes (5% each) | 20% |
+| 1 × hackathon project       | 40% |
+| 1 × in-class coding exam 	| 40% |
+
+--
+
+### Homework assignments 
+- Your incentive to practice what you learn in class regularly!
+- Each assignment is a mix of practical problems that are to be solved with R.
+- The assignments are distributed via our own [GitHub Classroom](https://classroom.github.com/classrooms/113288627-intro-to-data-science-25-classroom).
+- You are encouraged to collaborate, but everyone will hand in a separate solution.
+- There will be 4 assignments (one every ~2 weeks), and you'll have to submit 3 of them to pass the course.
+- You'll have one week to work on each assignment (deadline: Tuesdays at 9:30am).
+- You submit your solutions via GitHub.
+- Grading: pass/fail + feedback. Your solutions don't have to be perfect, but we want to see an individual effort.
+
+
+---
+# Assignments and grading
+
+| Component                           | Weight |
+|:-|-:|
+| 3(4) × homework assignments | pass/fail |
+| 4(5) × online quizzes (5% each) | 20% |
+| 1 × hackathon project       | 40% |
+| 1 × in-class coding exam 	| 40% |
+
+### Online quizzes
+- The short online quizzes will test your knowledge about the topics covered in class.
+- There will be 5 quizzes and the 4 best will contribute to the final grade.
+- You'll have one week to work on each assignment (deadline: Tuesdays at 9:30am).
+- Note that quizzes will employ light negative grading. Usually a question is multiple choice, with an unknown number of correct items. The rationale is that if you select all options with not all of them being correct, you should not receive full credit (otherwise, in the absence of negative grading, selecting all answers would be the dominant strategy). 
+
+
+---
+# Assignments and grading
+
+| Component                           | Weight |
+|:-|-:|
+| 3(4) × homework assignments | pass/fail |
+| 4(5) × online quizzes (5% each) | 20% |
+| 1 × hackathon project       | 40% |
+| 1 × in-class coding exam 	| 40% |
+
+### Hackathon project
+- On December 1, 14-16h, there will be a hackathon hosted at Hertie.
+- At the hackathon itself, I'll introduce the data and provide an environment that should facilitate you getting started with the project and form groups of 3-4 students.
+- After the hackathon project, you will get instructions . You will then have 72 hours to submit your solutions.
+- The task is similar to the homework assignments but puts more emphasis on creative problem-solving using the tools and techniques you have learned in class.
+
+
+
+---
+# Assignments and grading
+
+| Component                           | Weight |
+|:-|-:|
+| 3(4) × homework assignments | pass/fail |
+| 4(5) × online quizzes (5% each) | 20% |
+| 1 × hackathon project       | 40% |
+| 1 × in-class coding exam 	| 40% |
+
+### In-class coding exam
+- The in-class coding exam will take place in the final exam week (date tba).
+- The exam will be open-book, open-internet, and open-R. Collaboration will not be allowed.
+- The exam will be similar to the homework assignments but with a stronger emphasis on problem-solving under time constraints.
+- You will have 90 minutes to solve the exam.
+
+
+
+---
+# AI use in and for the course
+
+.pull-left-vwide[
+
+### Can AI tools (LLM-based coding assistants) be used for assignments?
+
+- Yes, but use them with care. You will not become an efficient programmer if you heavily rely on those tools without learning the basics.
+- The Hertie School has a [guideline]((https://moodle.hertie-school.org/mod/url/view.php?id=130259) in place that address the use of AI tools in education installed .
+- Some key elements from the guidelines:
+  - "Students are required to include a Statement of Authorship and AI Use at the end of each written assignment (...), which states their authorship including the use of AI and the absence of plagiarism."
+  - "[A]ll AI tools that have been used need to be specified in the Statement of Authorship."
+  - "Students are responsible for factual errors and false references in their assignments,
+even if these have been provided by AI tools that were properly disclosed. The assignment
+will receive a grade penalty in such instances."
+- "Non-disclosed or non-permitted (...) use of AI in assignments (...) is a
+violation of good academic conduct."
+]
+
+.pull-right-vsmall[
+<div align="center">
+<br>
+<img src="pics/chatgpt-logo.png" height=100>
+<br><br>
+<img src="pics/claude-ai-logo.png" height=50>
+<br><br>
+<img src="pics/gemini-code-assist-logo.png" height=100>
+<br><br>
+<img src="pics/github-copilot-logo.jpeg" height=100>
+<br>
+</div>
+]
+
+
+---
+# AI use in and for the course (cont.)
+
+.pull-left[
+## Your use of AI tools
+
+<div align="center">
+<br>
+<img src="pics/ai_usage_general.png" width=550>
+<br>
+</div>
+]
+
+.pull-right[
+## Your use of AI coding assistants
+
+<div align="center">
+<br>
+<img src="pics/ai_usage_coding_by_group.png" width=550>
+<br>
+</div>
+]
+
+
+
+
+
+---
+# AI use in and for the course (cont.)
+
+.pull-left-vwide[
+
+### *Should* you use AI tools for this course?
+
+- You are a student at one of the leading policy schools in the world. You decided to invest a considerable amount of time and money to learn about data science and public policy here. I think you're at the right place to do so.
+- However, the learning is still on you. What is key is that you want to *understand* what you are doing. That will require you to think hard and work hard. And that is ultimately what you need to excel in a data-based job.
+- Or, you could just rely on some commercial language model to do the hard work for you. If you do that, you will notice that the muscles you wanted to train will not grow.
+- That is not to say that AI is not useful for coding. It is incredibly powerful. But it also often fails spectacularly. You need to understand what is going on under the hood to make it work for you.
+- I am not here to discipline and punish. I have no interest in that. What I can do is provide you with an environment that facilitates learning and sets the right incentives. If you want to learn, I will help you. If you don't, I can't.
+
+]
+
+
+.pull-right-vsmall[
+<div align="center">
+<br><br><br>
+<img src="pics/wickham-shitty-code.jpeg" height=200>
+</div>
+]
+
+
+---
+# Core (and optional) readings
+
+<br><br><br>
+<div align="center">
+<img src="pics/r4ds.jpeg" height=300>
+<img src="pics/advr2end.jpeg" height=300>
+<img src="pics/rpackages.jpeg" height=300>
+<img src="pics/bitbybit.png" height=300>
+<img src="pics/datasciencekelleher.jpeg" height=300>
+</div>
+
+
+
+---
+# Further reading
+
+<div align="center">
+<img src="pics/manski-public-policy-uncertain.jpg" height=250>
+<img src="pics/bookofwhy.jpg" height=250>
+<img src="pics/everybodylies.jpg" height=250>
+<img src="pics/everythingisobvious.jpg" height=250>
+<img src="pics/calling-bullshit.jpeg" height=250>
+<img src="pics/wilkebook.jpeg" height=250><br>
+<img src="pics/bitbybitbook.jpg" height=250>
+<img src="pics/numbersrule.jpg" height=250>
+<img src="pics/numbersense.jpg" height=250>
+<img src="pics/rival-hypothesis-1.png" height=250>
+<img src="pics/art-of-statistics.jpg" height=250>
+<img src="pics/aisnakeoil.jpg" height=250>
+</div>
+
+
+---
+# Further listening
+
+<div align="center">
+<br><br><br>
+<img src="pics/podcast-tech-away.png" height=150>
+<img src="pics/podcast-ai-breakdown.png" height=150>
+<img src="pics/podcast-beginners-guide.png" height=150>
+<img src="pics/podcast-govtech360.png" height=150>
+<img src="pics/podcast-hdsr.png" height=150>
+<img src="pics/podcast-data-skeptic.png" height=150>
+<img src="pics/podcast-more-or-less.jpeg" height=150>
+<br>
+<img src="pics/podcast-linear-digressions.png" height=150>
+<img src="pics/podcast-not-so-standard-deviations.png" height=150>
+<img src="pics/podcast-digital-analytics-power-hour.jpeg" height=150>
+<img src="pics/podcast-oreilly-datashow.jpeg" height=150>
+<img src="pics/podcast-banana-data.jpeg" height=150>
+<img src="pics/podcast-stats-stories.png" height=150>
+<img src="pics/podcast-talking-machines.png" height=150>
+</div>
+
+
+
+---
+# Further watching
+
+<div align="center">
+<br><br><br><br><br>
+<img src="pics/3blue1brown.jpeg" height=200>
+<img src="pics/statsquest.jpeg" height=200>
+<img src="pics/dataviz-heiss.png" height=200>
+<img src="pics/online-causal-inference.png" height=200>
+<img src="pics/civica-data-science.png" height=200>
+</div>
+
+
+
+
+
+---
+# Coming up
+
+<br><br><br> 
+
+### The first lab session
+
+Get to know Carol, Killian, R, and RStudio, four of your best friends for the next months!
+
+### Next lecture
+
+Programming fundamentals
+
+
+
+
+
