@@ -1,8 +1,8 @@
 ---
 title: "Introduction to Data Science"
-subtitle: "Session 0: R and the tidyverse"
+subtitle: "R and the tidyverse"
 author: "Simon Munzert"
-institute: "Hertie School"
+institute: "Hertie School | [GRAD-C11/E1339](https://github.com/intro-to-data-science-26)" #"`r format(Sys.time(), '%d %B %Y')`"
 output:
   xaringan::moon_reader:
     css: [default, 'simons-touch.css', metropolis, metropolis-fonts] 

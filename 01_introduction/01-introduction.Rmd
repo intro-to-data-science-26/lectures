@@ -1,14 +1,14 @@
 ---
 title: "Introduction to Data Science"
-subtitle: "Session 1: What is data science?"
+subtitle: "What is data science?"
 author: "Simon Munzert"
-institute: "Hertie School | [GRAD-C11/E1339](https://github.com/intro-to-data-science-25)" #"`r format(Sys.time(), '%d %B %Y')`"
+institute: "Hertie School | [GRAD-C11/E1339](https://github.com/intro-to-data-science-26)" #"`r format(Sys.time(), '%d %B %Y')`"
 output:
   xaringan::moon_reader:
     includes:
-      after_body: "add_hertie_logo.html"
-      in_header: "my_header.html"
-    css: [default,'simons-touch.css', metropolis, metropolis-fonts] 
+      after_body: "../add_hertie_logo.html"
+      in_header: "../my_header.html"
+    css: [default,'../simons-touch.css', metropolis, metropolis-fonts] 
     lib_dir: libs
     nature:
       highlightStyle: github
@@ -68,9 +68,9 @@ library(fontawesome)
 
 ### Course
 
-`r fa('globe')` https://github.com/intro-to-data-science-25
+`r fa('globe')` https://github.com/intro-to-data-science-26
 
-Much of this course lives on GitHub. You will find lecture materials, code, assignments, and other people's presentations there. We also have Moodle, which is is for everything else.
+Much of this course lives on GitHub. You will find lecture materials, code, assignments, and other people's presentations there. We also have Moodle, which is for everything else: communication and reading materials. 
 
 --
 
@@ -107,28 +107,29 @@ Let's find out!
 
 ## Who & how
 
-- This course is accompanied by labs administered by **Carol Sobral** and **Killian Conyngham**.
-- The labs are mandatory (MDS) / optional (the rest). Please attend them in any case.
+- This course is accompanied by labs run by **Carol Sobral**, **Laia Domenech Burin** and **Linus Hagemann**.
+- Attending the labs is mandatory. You are not supposed to miss more than 2 sessions.
 - As with the regular classes, please stick to the lab you are assigned to.
 
 ## What for
 
 - What these sessions are meant for:
   - Applying tools in practice
-  - Discussion of issues related to the assignments
   - Boosting your R skills
+  - Discussion of issues related to the assignments
 - What these sessions are **not** meant for: 
   - Solving the assignments for you
-  - Taking care of developing your coding skills
+  - Revisiting all the lecture materials
 ]
 
 .pull-right-small-center[
 <div align="center">
 <br>
-<img src="pics/carol-circle.png" height=200>
+<img src="pics/carol-circle.png" height=150>
 <br>
+<img src="pics/laia-circle.png" height=150>
 <br>
-<img src="pics/killian-circle.png" height=200>
+<img src="pics/linus-circle.png" height=150>
 </div>
 ]
 
@@ -166,6 +167,9 @@ Let's find out!
 3. [(Data) science for public policy](#datasciencepublicpolicy)
 
 4. [Class logistics](#logistics)
+
+5. [Coding in this course](#coding)
+
 
 
 ---
@@ -215,6 +219,14 @@ name: whatisdatascience
 <img src="pics/terms_freq_mds.png" height=400>
 </div>
 ]
+
+---
+
+# What you think data science entails, version 2
+
+<div align="center">
+<img src="pics/terms_freq_comparison.png" height=550>
+</div>
 
 
 
@@ -483,55 +495,6 @@ name: datasciencepublicpolicy
 <html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
 
 
-
----
-# Types of data-driven research and their role for policy
-
-.pull-left-small2[
-## 1. Description
-- What is the state of the world?
-- What are the trends over time?
-- What are the differences between groups?
-
-## The value for policy-making
-- At the center of **monitoring**
-- "How many people consume misinformation online?"
-- "How many people are unemployed in a certain district?"
-- "How does the distribution of income vary across educational segments of the population?"
-]
-
---
-
-.pull-left-small2[
-## 2. Explanation
-- What is the effect of a policy?
-- Does the effect vary across groups?
-- What are the mechanisms behind the effect?
-
-## The value for policy-making
-- At the center of **evaluation**
-- "Did the wage increase lead to a decrease in employment?"
-- "Did the campaign affect the exposure to misinformation differently across groups?"
-- "Why did the intervention not lead to the expected results?"
-]
-
---
-
-.pull-left-small2[
-## 3. Prediction
-- What is the path of an indicator?
-- (When) will future events happen?
-- What class does this observation most likely belong to?
-
-
-## The value for policy-making
-- At the center of **forecasting** but also **targeting** and **measurement**
-- "Will there be conflict?"
-- "How many people will be unemployed in a certain district next year?"
-- "Which individuals are most likely to be affected by a policy?"
-]
-
-
 ---
 # The MIT Billion Prices Project
 
@@ -645,43 +608,66 @@ name: datasciencepublicpolicy
 <br><br>
 <img src="pics/facebook-us2020-2.png" width=500>
 </div>
-]
 
-.pull-right-center[
-<div align="center">
-<br><br>
-<img src="pics/facebook-us2020-3.png" width=500>
-</div>
-]
-
----
-# The Meta US 2020 Election study
-
-.pull-left[
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 `Source` [Guess et al. 2023, Science](https://www.science.org/doi/epdf/10.1126/science.abp9364)
 ]
+
 
 .pull-right[
 <div align="center">
-<img src="pics/facebook-us2020-guess-1.png" width=500>
+<img src="pics/facebook-us2020-guess-2.png" width=650>
 </div>
 ]
+
 
 
 ---
-# The Meta US 2020 Election study
+# Types of data-driven research and their role for policy
 
-.pull-left-small[
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-`Source` [Guess et al. 2023, Science](https://www.science.org/doi/epdf/10.1126/science.abp9364)
+.pull-left-small2[
+## 1. Description
+- What is the state of the world?
+- What are the trends over time?
+- What are the differences between groups?
+
+## The value for policy-making
+- At the center of **monitoring**
+- "How many people consume misinformation online?"
+- "How many people are unemployed in a certain district?"
+- "How does the distribution of income vary across educational segments of the population?"
 ]
 
-.pull-right-wide[
-<div align="center">
-<img src="pics/facebook-us2020-guess-2.png" width=700>
-</div>
+--
+
+.pull-left-small2[
+## 2. Explanation
+- What is the effect of a policy?
+- Does the effect vary across groups?
+- What are the mechanisms behind the effect?
+
+## The value for policy-making
+- At the center of **evaluation**
+- "Did the wage increase lead to a decrease in employment?"
+- "Did the campaign affect the exposure to misinformation differently across groups?"
+- "Why did the intervention not lead to the expected results?"
 ]
+
+--
+
+.pull-left-small2[
+## 3. Prediction
+- What is the path of an indicator?
+- (When) will future events happen?
+- What class does this observation most likely belong to?
+
+
+## The value for policy-making
+- At the center of **forecasting** but also **targeting** and **measurement**
+- "Will there be conflict?"
+- "How many people will be unemployed in a certain district next year?"
+- "Which individuals are most likely to be affected by a policy?"
+]
+
 
 
 
@@ -708,25 +694,127 @@ background-color: #000000
 # You at the end of the course
 
 
-
 ---
 
 # Introduction to Data Science in a nutshell
 
 <div align="center">
-<img src="pics/ids-syllabus-2025.png" height=520>
+<img src="pics/ids-syllabus-2026.png" height=520>
 </div>
 
 
+---
+# Assignments and grading
+
+| Component                           | Weight |
+|:-|-:|
+| 3(4) × homework assignments | pass/fail |
+| 8(10) × onsite quizzes (3% each) | 24% |
+| 1 × hackathon project       | 36% |
+| 1 × in-class coding exam 	| 40% |
+
+--
+
+### Homework assignments 
+- Your incentive to practice what you learn in class regularly!
+- Each assignment is a mix of practical problems that are to be solved with R.
+- There will be 4 assignments (one every ~2 weeks), and you'll have to submit 3 of them to pass the course.
+- You'll have about one week to work on each assignment (deadline: Fridays the following week at 6pm).
+- The assignments are distributed via [Classroom 50](https://classroom50.org/).
+- You are encouraged to collaborate, but everyone will hand in a separate solution.
+- You submit your solutions via GitHub.
+- Grading: pass/fail + feedback. Your solutions don't have to be perfect, but we want to see an individual effort.
 
 
+---
+# Assignments and grading
+
+| Component                           | Weight |
+|:-|-:|
+| 3(4) × homework assignments | pass/fail |
+| 8(10) × onsite quizzes (3% each) | 24% |
+| 1 × hackathon project       | 36% |
+| 1 × in-class coding exam 	| 40% |
+
+### Onsite quizzes
+- The short 5-minute quizzes, administered at the beginning of the lecture, will test your knowledge about the topics covered in class. Content can be drawn from the lecture of the past week and the readings of the current.
+- There will be 10 quizzes and the 8 best will contribute to the final grade.
+- The quiz format will be single choice.
+- You cannot make up for missed quizzes. If you miss a quiz, it will be counted as one of the two lowest scores that are dropped.
+- Taking the quiz counts as attendance for the lecture. If you miss a quiz, you will be marked absent for that lecture.
+- Important: Keep a pen ✎ ready for the quiz! 
+
+ 
+---
+# Assignments and grading
+
+| Component                           | Weight |
+|:-|-:|
+| 3(4) × homework assignments | pass/fail |
+| 8(10) × onsite quizzes (3% each) | 24% |
+| 1 × hackathon project       | 36% |
+| 1 × in-class coding exam 	| 40% |
+
+### Hackathon project
+- On November 19, 14-16h, there will be a hackathon hosted at Hertie.
+- At the hackathon itself, I'll introduce the data and provide an environment that should facilitate you getting started with the project and form groups of 3-4 students.
+- After the hackathon project, you will get instructions . You will then have 96 hours to submit your solutions.
+- The task is similar to the homework assignments but puts more emphasis on creative problem-solving using the tools and techniques you have learned in class.
+
+
+
+---
+# Assignments and grading
+
+| Component                           | Weight |
+|:-|-:|
+| 3(4) × homework assignments | pass/fail |
+| 8(10) × onsite quizzes (3% each) | 24% |
+| 1 × hackathon project       | 36% |
+| 1 × in-class coding exam 	| 40% |
+
+### In-class coding exam
+
+- The in-class coding exam will take place in the final exam week (date tba).
+- You will complete the exam on pen and paper. No laptops, internet access, or other electronic aids are permitted. 
+- Communication or collaboration with other students—either in person or online—is strictly prohibited. 
+- The exam is designed to assess individual problem-solving skills and coding proficiency under timed conditions.
+- You will have 90 minutes to solve the exam.
+
+
+
+---
+# Attendance
+
+## General rules
+
+- You cannot miss more than two sessions. If you have to miss a session for medical reasons or personal emergencies, please **inform Examination Office** and they will inform me about your absence.
+- I **don't want you to notify me about absences** in advance or ex post.
+- We will check attendance on-site through the quizzes.
+
+
+## Office hours and advice
+
+- If you want to discuss content from class, first do so with your Lab TA. 
+- If you want to discuss something with the entire group, use the Moodle forum.
+- If you want to discuss something with me, please sign up for a slot in my office hours (link on Moodle). If my office hours don't work for you, please email me and we will find a time that works for both of us.
+- For general methods advice, the [Research Consulting Team at the Data Science Lab](https://hertie-data-science-lab.github.io/research-consulting/) is there for you.
+
+
+
+---
+class: inverse, center, middle
+name: logistics
+
+# Coding in this course
+<html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
 
 
 ---
 class: center
 background-color: #fff
 
-# Why R?
+# The tidyverse
 
 <div align="center">
 <br>
@@ -766,20 +854,55 @@ programming languages and APIs.
 ---
 # Why R and RStudio? (cont.)
 
-```{R, indeeddotcom, echo = F, fig.height = 7, fig.width = 11, dev = "svg", warning = F}
-# The popularity data
-pop_df = 
-  data.frame(
-  lang = c("Python", "SQL", "R", "SAS", "Matlab", "Julia", "SPSS", "Stata"),
-  #n_jobs = c(6850, 6136, 4384, 551, 537, 249, 110, 60), # 2024/09/01 -> not possible anymore - they don't provide precise numbers!
-  n_jobs = c(6850, 6136, 4384, 551, 537, 249, 110, 60), # 2023/09/01
-  #n_jobs = c(12203, 10291, 6812, 1005, 838, 474, 296, 67), # 2022/09/03
-  #n_jobs = c(8150, 7264, 3484, 950, 687, 270, 74), # 2021/08/27
-  #n_jobs = c(99756, 132860, 41242, 31943, NA, 4843, 2302),
-  free = c(T, T, T, F, F, T, F, F)
+```{R, indeeddotcom, echo = F, fig.height = 5.5, fig.width = 11, dev = "svg", warning = F, message = F}
+# The popularity data: job posting counts from the Adzuna API (Germany index);
+# used to be de.indeed.com, which does not provide precise counts anymore
+languages <- c("Python", "SQL", "R", "SAS", "Matlab", "Julia", "SPSS", "Stata")
+free_lang <- c(TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE)
+cache_file <- "adzuna_job_counts.csv"
+
+fetch_adzuna_count <- function(lang, app_id, app_key, attempts = 3) {
+  Sys.sleep(0.5) # be gentle; rapid bursts trigger transient 503s
+  url <- sprintf(
+    "https://api.adzuna.com/v1/api/jobs/de/search/1?app_id=%s&app_key=%s&what=%s&results_per_page=1",
+    app_id, app_key, URLencode(paste(tolower(lang), "data"))
   )
+  for (i in seq_len(attempts)) {
+    count <- try(jsonlite::fromJSON(url)$count, silent = TRUE)
+    if (!inherits(count, "try-error")) return(count)
+    Sys.sleep(2)
+  }
+  stop("Adzuna API request failed for ", lang)
+}
+
+pop_df <- NULL
+if (file.exists(cache_file)) { # use cached counts; delete the file to force a fresh fetch
+  pop_df <- read_csv(cache_file, show_col_types = FALSE)
+} else {
+  try({ # fetch fresh counts; requires ADZUNA_ID and ADZUNA_KEY from the key file
+    load("/Users/s.munzert/rkeys.RDa")
+    pop_df <- tibble(
+      lang = languages,
+      n_jobs = map_dbl(languages, fetch_adzuna_count, app_id = ADZUNA_ID, app_key = ADZUNA_KEY),
+      free = free_lang,
+      date = Sys.Date()
+    )
+    write_csv(pop_df, cache_file)
+  }, silent = TRUE)
+}
+if (!is.null(pop_df)) {
+  fig_subtitle <- paste0("Number of job postings for '<language> data' on adzuna.com (Germany), ", format(max(pop_df$date), "%Y/%m/%d"))
+} else { # last resort: hardcoded values from the old indeed.com series
+  pop_df <- tibble(
+    lang = languages,
+    n_jobs = c(6850, 6136, 4384, 551, 537, 249, 110, 60), # 2023/09/01
+    free = free_lang
+  )
+  fig_subtitle <- "Number of job postings for '<language> data' on de.indeed.com, 2023/09/01"
+}
+
 ## Plot it
-pop_df %>% 
+pop_df %>%
   mutate(lang = lang %>% factor(ordered = T)) %>%
   ggplot(aes(x = lang, y = n_jobs, fill = free)) +
   geom_col() +
@@ -790,7 +913,7 @@ pop_df %>%
   ylab("Number of jobs") +
   labs(
     title = "Comparing statistical languages",
-    subtitle = "Number of job postings for '<language> data' on de.indeed.com, 2023/09/01"
+    subtitle = fig_subtitle
     ) +
   scale_fill_manual(
     "Free of charge?",
@@ -803,119 +926,187 @@ pop_df %>%
 ```
 
 
----
-# Why R and RStudio? (cont.)
 
+---
+# A detour: a brief history of the autopilot
+
+.pull-left-wide[
+
+### 1912-1914: The gyroscopic autopilot
+
+- The Sperry Corporation develops the first aircraft autopilot: two gyroscopes hooked up to hydraulically operated elevators and rudder, keeping the plane straight and level.
+- In 1914, Lawrence Sperry famously demonstrates the system at a flight safety competition in Paris — flying past the judges with his hands off the controls, while his mechanic walked out onto the wing.
+
+### 1933: Around the world with "Mechanical Mike"
+
+- Wiley Post flies solo around the world in 7 days and 19 hours in the *Winnie Mae* — a feat considered impossible for a single pilot.
+- His secret: a Sperry gyroscopic autopilot (nicknamed "Mechanical Mike") and a radio direction finder effectively replaced the human navigator and let him rest during long legs.
+
+`Image credit` Lawrence Sperry ([Wikimedia Commons](https://commons.wikimedia.org/wiki/File:LawrenceSperry.jpg))
+]
+
+.pull-right-small[
 <div align="center">
-<img src="pics/facebook-programming-languages.png" width=550>
+<img src="pics/autopilot-sperry.jpg" width=240>
+<br><br>
+<img src="pics/cnbc-documentary.png" width=330>
 </div>
-`Credit` [Left_Ad8361/Reddit](https://www.reddit.com/r/dataisbeautiful/comments/qw1bew/oc_which_programming_language_is_required_to_land/)
-
-
----
-# Attendance
-
-## General rules
-
-- You cannot miss more than two sessions. If you have to miss a session for medical reasons or personal emergencies, please **inform Examination Office** and they will inform me about your absence.
-- I **don't want you to notify me about absences** in advance or ex post.
-- We will check attendance on-site.
-
-
-## Office hours and advice
-
-- If you want to discuss content from class, first do so in with your Lab TA. 
-- If you want to discuss something with the entire group, use the Moodle forum.
-- If you want to discuss something with me, please sign up for a slot in my office hours (link on Moodle).
-- For general technical advice, the [Research Consulting Team at the Data Science Lab](https://hertie-data-science-lab.github.io/research-consulting/) is there for you.
+[CNBC documentary on YT](https://www.cnbc.com/video/2015/10/15/the-invention-of-the-autopilot.html) (8:42 min)
+]
 
 
 
 ---
-# Assignments and grading
+# A brief history of the autopilot (cont.)
 
-| Component                           | Weight |
-|:-|-:|
-| 3(4) × homework assignments | pass/fail |
-| 4(5) × online quizzes (5% each) | 20% |
-| 1 × hackathon project       | 40% |
-| 1 × in-class coding exam 	| 40% |
+.pull-left-wide[
 
---
+### 1947: Crossing the Atlantic hands-off
 
-### Homework assignments 
-- Your incentive to practice what you learn in class regularly!
-- Each assignment is a mix of practical problems that are to be solved with R.
-- The assignments are distributed via our own [GitHub Classroom](https://classroom.github.com/classrooms/113288627-intro-to-data-science-25-classroom).
-- You are encouraged to collaborate, but everyone will hand in a separate solution.
-- There will be 4 assignments (one every ~2 weeks), and you'll have to submit 3 of them to pass the course.
-- You'll have one week to work on each assignment (deadline: Tuesdays at 9:30am).
-- You submit your solutions via GitHub.
-- Grading: pass/fail + feedback. Your solutions don't have to be perfect, but we want to see an individual effort.
+- A U.S. Air Force Douglas C-54 Skymaster crosses the Atlantic entirely under automatic control — including takeoff and landing.
+- The demonstration shows that, in principle, a machine could handle a complete flight. That was almost 80 years ago!
 
+### 1960s-today: Autoland, fly-by-wire, flight management
 
----
-# Assignments and grading
+- 1965: First automatic landings with passengers on board in commercial service (autoland).
+- 1980s onwards: Digital fly-by-wire and Flight Management Systems (FMS) turn the autopilot into an integrated flight guidance computer; modern autoland systems can touch down in almost zero visibility.
+- And yet: two highly trained pilots still sit in the front of every commercial jet.
 
-| Component                           | Weight |
-|:-|-:|
-| 3(4) × homework assignments | pass/fail |
-| 4(5) × online quizzes (5% each) | 20% |
-| 1 × hackathon project       | 40% |
-| 1 × in-class coding exam 	| 40% |
+`Credit` [U.S. Air Force/Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Douglas_C-54_Skymaster_USAF.JPG), [New York Times](https://www.nytimes.com/1947/09/23/archives/robotpiloted-plane-makes-safe-crossing-of-atlantic-no-hand-on.html)
+]
 
-### Online quizzes
-- The short online quizzes will test your knowledge about the topics covered in class.
-- There will be 5 quizzes and the 4 best will contribute to the final grade.
-- You'll have one week to work on each assignment (deadline: Tuesdays at 9:30am).
-- Note that quizzes will employ light negative grading. Usually a question is multiple choice, with an unknown number of correct items. The rationale is that if you select all options with not all of them being correct, you should not receive full credit (otherwise, in the absence of negative grading, selecting all answers would be the dominant strategy). 
+.pull-right-small[
+<div align="center">
+<img src="pics/autopilot-c54.jpg" width=360>
+<br>
+<img src="pics/robot-pilot-nyt.jpg" width=360>
+</div>
+]
 
 
 ---
-# Assignments and grading
+# How modern autopilots work
 
-| Component                           | Weight |
-|:-|-:|
-| 3(4) × homework assignments | pass/fail |
-| 4(5) × online quizzes (5% each) | 20% |
-| 1 × hackathon project       | 40% |
-| 1 × in-class coding exam 	| 40% |
+.pull-left-wide[
 
-### Hackathon project
-- On December 1, 14-16h, there will be a hackathon hosted at Hertie.
-- At the hackathon itself, I'll introduce the data and provide an environment that should facilitate you getting started with the project and form groups of 3-4 students.
-- After the hackathon project, you will get instructions . You will then have 72 hours to submit your solutions.
-- The task is similar to the homework assignments but puts more emphasis on creative problem-solving using the tools and techniques you have learned in class.
+### The system
+
+- Modern autopilots control the aircraft around all three axes (roll, pitch, yaw), plus engine thrust (autothrottle).
+- Pilots program the route into the FMS; the autopilot then tracks the lateral and vertical flight profile.
+- Position and attitude come from fusing many sensors — inertial units, GPS, radio beacons — with (data science alert!) [Kalman filters](https://en.wikipedia.org/wiki/Kalman_filter).
+
+### Autopilot vs. human
+
+- The autopilot does not "think" — it executes pre-programmed control laws within a narrow envelope.
+- It handles climb, cruise, descent, and (some) landings. Takeoffs? Taxiing? Unexpected situations? Still the humans' job.
+- Pilots act as "automation managers": they select modes, monitor the system, and take over when it quits.
+]
+
+.pull-right-small[
+<div align="center">
+<img src="pics/autopilot-747-cockpit.jpg" width=400>
+<br>
+<img src="pics/autopilot-747-fms.jpg" width=400>
+</div>
+
+Boeing 747SP cockpit and autopilot control panel; `Credit`  ([NASA/Wikimedia Commons](https://commons.wikimedia.org/wiki/File:SOFIA_Boeing_747SP_cockpit_(after_upgrade), [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:FMS_B747-cockpit.jpg))
+]
+
+
+---
+# Why do human pilots still exist?
+
+.pull-left-wide[
+
+### The training pipeline of an airline pilot
+
+- Private license `r fa("arrow-right")` commercial license `r fa("arrow-right")` airline transport pilot (ATP) certificate.
+- In the US, the ATP requires **1,500 hours of flight time** before you may fly for an airline as captain or first officer.
+- Add a **type rating** for every jet you fly, plus **recurrent simulator checks** every 6-12 months — for your entire career, including practicing engine failures, stalls, and, yes, autopilot malfunctions.
+
+### Why all this, if the autopilot flies the plane?
+
+- Automation fails rarely, but when it does, it tends to hand over a plane that is already in trouble. The human is the redundancy of last resort.
+- Ironically, more automation requires *better*-trained pilots, not less-trained ones: overreliance on autopilots degrades manual flying skills, which is why regulators and airlines force pilots to keep hand-flying.
+]
+
+.pull-right-small[
+
+### Two cautionary tales
+
+**[Qantas Flight 72](https://en.wikipedia.org/wiki/Qantas_Flight_72) (2008)**: A faulty air-data computer fed corrupted data to the flight computers, which commanded two violent nosedives; over 100 were injured. The crew hand-flew the damaged A330 to a safe emergency landing.
+
+**[Air France 447](https://en.wikipedia.org/wiki/Air_France_Flight_447) (2009)**: Iced-over sensors made the autopilot quit mid-Atlantic. The startled crew, out of manual-flying practice, stalled a perfectly flyable A330; all 228 aboard died.
+]
 
 
 
 ---
-# Assignments and grading
+# Why learn how to code in the age of AI?
 
-| Component                           | Weight |
-|:-|-:|
-| 3(4) × homework assignments | pass/fail |
-| 4(5) × online quizzes (5% each) | 20% |
-| 1 × hackathon project       | 40% |
-| 1 × in-class coding exam 	| 40% |
+.pull-left-wide[
 
-### In-class coding exam
-- The in-class coding exam will take place in the final exam week (date tba).
-- The exam will be open-book, open-internet, and open-R. Collaboration will not be allowed.
-- The exam will be similar to the homework assignments but with a stronger emphasis on problem-solving under time constraints.
-- You will have 90 minutes to solve the exam.
+### A thought experiment
 
+Would you board a plane operated by someone who just learned how to fly... by chatting with ChatGPT?
+
+Probably not. But why not? The autopilot does most of the flying anyway, and the LLM gives great flying advice.
+
+### What that means for you
+
+- AI coding assistants, are great, but data science projects are not standardized, and you still have to do much more than just the takeoffs and landings.
+- AI might fail you when things get difficult. If you can't "hand-fly" — read, reason about, and write code yourself — you won't even notice you're in trouble.
+- Pilots are required to keep hand-flying for good reason. If you let AI do all the coding while you're still learning, the "brain muscles" you came here to train will not grow.
+]
+
+.pull-right-small[
+<div align="center">
+<br>
+<img src="pics/cockpit-what-is-it.jpg" width=300>
+</div>
+]
+
+---
+background-image: url("pics/pilots-cockpit-thumbsup.png")
+background-size: contain
+background-color: #000000
+
+# The goal of this course is to train you to be the pilot.
 
 
 ---
 # AI use in and for the course
 
+.pull-left[
+## Your use of AI tools
+
+<div align="center">
+<br>
+<img src="pics/ai_usage_general.png" width=550>
+<br>
+</div>
+]
+
+.pull-right[
+## Your use of AI coding assistants
+
+<div align="center">
+<br>
+<img src="pics/ai_usage_coding_by_group.png" width=550>
+<br>
+</div>
+]
+
+
+---
+# AI use in and for the course (cont.)
+
 .pull-left-vwide[
 
 ### Can AI tools (LLM-based coding assistants) be used for assignments?
 
-- Yes, but use them with care. You will not become an efficient programmer if you heavily rely on those tools without learning the basics.
-- The Hertie School has a [guideline]((https://moodle.hertie-school.org/mod/url/view.php?id=130259) in place that address the use of AI tools in education installed .
+- There is not much I can do to prevent you from using them.
+- The Hertie School has a [guideline](https://hertieschool.sharepoint.com/sites/CurricularAffairs/Student%20%20facing%20files/Forms/AllItems.aspx?id=%2Fsites%2FCurricularAffairs%2FStudent%20%20facing%20files%2FAI%20Guidelines%20for%20Teachers%20and%20Students_2025.pdf&parent=%2Fsites%2FCurricularAffairs%2FStudent%20%20facing%20files) in place that address the use of AI tools in education installed .
 - Some key elements from the guidelines:
   - "Students are required to include a Statement of Authorship and AI Use at the end of each written assignment (...), which states their authorship including the use of AI and the absence of plagiarism."
   - "[A]ll AI tools that have been used need to be specified in the Statement of Authorship."
@@ -940,29 +1131,6 @@ violation of good academic conduct."
 </div>
 ]
 
-
----
-# AI use in and for the course (cont.)
-
-.pull-left[
-## Your use of AI tools
-
-<div align="center">
-<br>
-<img src="pics/ai_usage_general.png" width=550>
-<br>
-</div>
-]
-
-.pull-right[
-## Your use of AI coding assistants
-
-<div align="center">
-<br>
-<img src="pics/ai_usage_coding_by_group.png" width=550>
-<br>
-</div>
-]
 
 
 
@@ -1072,7 +1240,7 @@ violation of good academic conduct."
 
 ### The first lab session
 
-Get to know Carol, Killian, R, and RStudio, four of your best friends for the next months!
+Get to know Carol, Laia, Linus, R, and RStudio, five of your best friends for the next months!
 
 ### Next lecture
 
