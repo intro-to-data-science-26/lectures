@@ -203,7 +203,7 @@ name: whatisdatascience
 
 ---
 
-# What you think data science entails
+# What you think data science entails, V2
 
 .pull-left[
 <div align="center">
@@ -223,14 +223,30 @@ name: whatisdatascience
 
 ---
 
-# What you think data science entails, version 2
+# What you think data science entails, V3
 
 <div align="center">
 <img src="pics/terms_freq_comparison.png" height=550>
 </div>
 
 
+---
+#Definitions of data science
 
+## What is data science?
+
+
+
+---
+#Definitions of data science
+
+## What is data science?
+
+<div align="center"><br>
+<img src="pics/data-science-wiki-not-to-be-confused.png" height=250>
+</div>
+
+`Credit` [Wikipedia](https://en.wikipedia.org/wiki/Data_science)
 
 ---
 #Definitions of data science
