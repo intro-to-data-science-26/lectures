@@ -6,7 +6,7 @@
 
 1. What is data science? \[[**.html**](https://raw.githack.com/intro-to-data-science-26/lectures/main/01_introduction/01-introduction.html) | [**.pdf**](https://raw.githack.com/intro-to-data-science-26/lectures/main/01_introduction/01-introduction.pdf) | [**.Rmd**](https://raw.githack.com/intro-to-data-science-26/lectures/main/01_introduction/01-introduction.Rmd)\]
 
-2. Programming I: Project management, coding etiquette, functions \[[**.html**](https://raw.githack.com/intro-to-data-science-26/lectures/main/02_functions/02-functions.html) | [**.pdf**](https://raw.githack.com/intro-to-data-science-26/lectures/main/02_functions/02-functions.pdf) | [**.Rmd**](https://raw.githack.com/intro-to-data-science-26/lectures/main/02_functions/02-functions.Rmd)\]
+2. Programming I: Functions, debugging, project management \[[**.html**](https://raw.githack.com/intro-to-data-science-26/lectures/main/02_functions/02-functions.html) | [**.pdf**](https://raw.githack.com/intro-to-data-science-26/lectures/main/02_functions/02-functions.pdf) | [**.Rmd**](https://raw.githack.com/intro-to-data-science-26/lectures/main/02_functions/02-functions.Rmd)\]
 
 3. Programming II: Iteration, automation, scheduling \[[**.html**](https://raw.githack.com/intro-to-data-science-26/lectures/main/03_iteration/03-iteration.html) | [**.pdf**](https://raw.githack.com/intro-to-data-science-26/lectures/main/03_iteration/03-iteration.pdf) | [**.Rmd**](https://raw.githack.com/intro-to-data-science-26/lectures/main/03_iteration/03-iteration.Rmd)\]
 

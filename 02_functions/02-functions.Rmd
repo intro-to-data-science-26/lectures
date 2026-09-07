@@ -69,6 +69,8 @@ library(kableExtra)
 
 4. [Coding style](#style)
 
+5. [Debugging](#debugging)
+
 
 <!-- ############################################ -->
 ---
@@ -224,7 +226,7 @@ tidyverse_packages()
 .pull-left[
 ### Stories from the past
 
-- When I started to learn R ~16 years ago, there was no tidyverse. The learning curve felt much steeper. I often switched back to Stata for data wrangling.
+- When I started to learn R ~19 years ago, there was no tidyverse. The learning curve felt much steeper. I often switched back to Stata for data wrangling.
 - As the tidyverse grew, R became more convenient to use for the entire research pipeline.
 - There's simply no need for you to live through the same pain.
 
@@ -316,6 +318,28 @@ That's a legit question. There are 22,000+ **packages** on [CRAN](https://cran.r
 --
 
 2. You want to estimate not one but multiple models on your dataset. The models vary both in terms of data input and specification. Again, based on existing modeling functions you tailor your own, allowing you to run all these models automatically and to parse the results into one clean data frame.
+
+---
+
+# What kinds of functions will you write?
+
+Most functions you will write as a data scientist fall into one of three types:
+
+|   | Vector functions | Data frame functions | Plot functions |
+|---|------------------|----------------------|----------------|
+| **Input** | One or more vectors | A data frame (+ column names) | A data frame (+ column names) |
+| **Output** | A vector | A data frame | A plot |
+| **Typical use** | Inside `mutate()`, `filter()`, or `summarize()` | As a custom verb wrapping a repeated dplyr pipeline | As a recipe wrapping repeated ggplot2 code |
+| **Example** | `z_score(x)` | `grouped_mean(df, ...)` | `histogram(df, var)` |
+
+--
+
+Some foreshadowing - there's more out there, but no reason to panic yet:
+
+- **Functions made for iteration**, which you pass on to other functions such as `purrr::map()`. See next session!
+- **Functions with side effects**, which you call for what they do (saving a file, printing a message), not for what they return.
+- **Bundles of functions**, aka packages. Once your functions prove useful beyond a single project, [bundling them in a package](https://r-pkgs.org/) is the next logical step.
+
 
 ---
 
@@ -899,7 +923,6 @@ A common application is to use `...` to pass those additional arguments on to an
 my_list_generator <- function(y, z) {
   list(y = y, z = z)
 }
-
 my_list_generator_2 <- function(x, ...) {
   my_list_generator(...)
 }
@@ -929,14 +952,300 @@ Arguments:
 
 
 ---
-# Writing functions with ChatGPT
+# Data frame functions
+
+.pull-left[
+## The problem 
+
+Once you catch yourself repeating the same dplyr pipeline over and over, the obvious next step is to wrap it in a function - a **data frame function** that works like a custom dplyr verb.
+
+Say we often compute group-wise means. Easy to functionalize, right?
+
+- We pass the data frame plus the names of a grouping variable and a target variable.
+- The function pipes them through `group_by()` and `summarize()`.
+- What could possibly go wrong?
+]
+
+.pull-right[
+```{r, eval = FALSE}
+grouped_mean <-
+  function(df, group_var, mean_var) {
+  df |>
+    group_by(group_var) |>
+    summarize(
+      mean = mean(mean_var,
+                  na.rm = TRUE))
+}
+```
+{{content}}
+]
+
+--
+
+```{r, eval = FALSE}
+grouped_mean(flights, origin, arr_delay)
+```
+
+```r
+#> Error in `group_by()`:
+#> ! Must group by variables found in `.data`.
+#> ✖ Column `group_var` is not found.
+```
+{{content}}
+
+--
+
+😱 dplyr complains that there is no column called `group_var` - even though we clearly meant "the variable *stored in* `group_var`", i.e. `origin`. Welcome to the problem of **indirection**.
+
+
+---
+# Indirection and tidy evaluation
+
+.pull-left[
+## The solution 
+
+R's behavior is a feature, not a bug. dplyr verbs use **tidy evaluation**: your code is evaluated *inside the data frame*, which is why you can refer to columns as if they were ordinary objects (no `flights$origin` needed).
+
+However: `group_by(group_var)` is taken literally. dplyr looks for a column named `group_var` and cannot know that we mean the column whose name is stored in it.
+
+The fix is called **embracing**: Wrapping an argument in doubled curly braces, `{{ }}`, tells dplyr to look down the tunnel 👀 (inside the argument) and use its contents.
+
+Embrace whenever you pass column names on to a dplyr verb. This one trick covers most data frame functions you'll ever write.
+]
+
+.pull-right[
+```{r}
+grouped_mean <-
+  function(df, group_var, mean_var) {
+  df |>
+    group_by({{ group_var }}) |>  #<<
+    summarize(
+      mean = mean({{ mean_var }},  #<<
+                  na.rm = TRUE))
+}
+grouped_mean(flights, origin, arr_delay)
+```
+]
+
+
+---
+# Data frame functions: a real-life example
+
+.pull-left[
+Once you've internalized `{{ }}`, you can build yourself little helpers for everyday data work. Here is `summary6()`, which computes six summaries of any numeric variable at once:<sup>1</sup>
+
+```{r}
+summary6 <- function(data, var) {
+  data |> summarize(
+    min = min({{ var }}, na.rm = TRUE),
+    mean = mean({{ var }}, na.rm = TRUE),
+    median = median({{ var }}, na.rm = TRUE),
+    max = max({{ var }}, na.rm = TRUE),
+    n = n(),
+    n_miss = sum(is.na({{ var }})),
+    .groups = "drop"
+  )
+}
+```
+
+.footnote[<sup>1</sup> Straight from [R for Data Science, Ch. 25](https://r4ds.hadley.nz/functions.html#data-frame-functions).]
+]
+
+.pull-right[
+```{r}
+diamonds |> summary6(carat)
+```
+{{content}}
+]
+
+--
+
+Because `summarize()` does all the heavy lifting, our function inherits its superpowers - it works on grouped data, too:
+{{content}}
+
+--
+
+```{r}
+diamonds |> group_by(cut) |> summary6(carat)
+```
+
+
+---
+# Data-masking vs. tidy-selection
+
+Tidy evaluation comes in two flavors. Knowing which one you're dealing with helps you write functions - and read documentation:
+
+.pull-left[
+### Data-masking
+
+- Used in functions that **compute with** variables: `filter()`, `mutate()`, `summarize()`, `arrange()`, `group_by()`, ...
+- Arguments are expressions involving columns:
+
+```{r, eval = FALSE}
+flights |> filter(arr_delay > 60)
+flights |> mutate(speed = distance / air_time)
+```
+]
+
+.pull-right[
+### Tidy-selection
+
+- Used in functions that **select** variables: `select()`, `relocate()`, `rename()`, `across()`, ...
+- Arguments are column positions, ranges, or helpers:
+
+```{r, eval = FALSE}
+flights |> select(year:day)
+flights |> relocate(starts_with("arr"))
+```
+]
+
+--
+
+**How do you know which flavor a given argument uses?** Check the help file: the argument descriptions of, e.g., `?dplyr::filter` vs. `?dplyr::select` explicitly say `<data-masking>` or `<tidy-select>`. The good news: embracing with `{{ }}` works for both.
+
+
+---
+# Data-masking vs. tidy-selection *cont.*
+
+.pull-left[
+What if you want to use **tidy-selection inside a data-masking function** - say, group by an arbitrary *set* of variables?
+
+Meet `pick()`, which lets you smuggle tidy-selection into data-masking arguments:
+
+- `pick({{ group_vars }})` selects any number of columns...
+- ... and hands them over to `group_by()`.
+
+There's more where this came from (`across()`, injection with `!!`, the walrus operator `:=`, ...). No need to master these now - it's enough to know that the [programming vignettes](https://dplyr.tidyverse.org/articles/programming.html) exist for when you meet them in the wild.
+]
+
+.pull-right[
+```{r}
+count_missing <-
+  function(df, group_vars, x_var) {
+  df |>
+    group_by(pick({{ group_vars }})) |> #<<
+    summarize(
+      n_miss = sum(is.na({{ x_var }})),
+      .groups = "drop")
+}
+flights |>
+  count_missing(c(year, month, day),
+                dep_time) |>
+  print(n = 4)
+```
+]
+
+
+---
+# Plot functions
+
+.pull-left[
+The same logic carries over to ggplot2, because `aes()` is a data-masking function, too. So if you're tired of copy-pasting the same plotting code, write a **plot function** and embrace its arguments:
+
+```{r}
+histogram <-
+  function(df, var, binwidth = NULL) {
+  df |>
+    ggplot(aes(x = {{ var }})) +  #<<
+    geom_histogram(binwidth = binwidth)
+}
+```
+
+- The function takes a data frame and a variable and returns a ggplot object.
+- That means you can still add layers with `+` as usual (see on the right).
+]
+
+.pull-right[
+```{r, fig.height = 3.2, fig.width = 5, out.width = "85%", message = FALSE}
+diamonds |> histogram(carat, 0.1)
+```
+{{content}}
+]
+
+--
+
+```{r, eval = FALSE}
+diamonds |>
+  histogram(carat, 0.1) +
+  labs(x = "Size (in carats)")
+```
+
+
+---
+# 🗳️ Interactive exercise: Will it run?
+
+No coding needed - just vote! Each snippet below runs in a fresh R session with `tidyverse` and `nycflights13` loaded. For each one: does it return a result (🟢) or throw an error (🔴)? Vote by show of hands - and be ready to defend your prediction!
+
+.pull-left[
+**Snippet 1**
+
+```{r, eval = FALSE}
+mean_delay <- function(df) {
+  df |>
+    summarize(m = mean(dep_delay, na.rm = TRUE))
+}
+mean_delay(flights)
+```
+
+**Snippet 2**
+
+```{r, eval = FALSE}
+mean_of <- function(df, var) {
+  df |>
+    summarize(m = mean(var, na.rm = TRUE))
+}
+mean_of(flights, dep_delay)
+```
+]
+
+.pull-right[
+**Snippet 3**
+
+```{r, eval = FALSE}
+mean_of <- function(df, var) {
+  df |>
+    summarize(m = mean({{ var }}, na.rm = TRUE))
+}
+mean_of(flights, dep_delay)
+```
+
+**Snippet 4**
+
+```{r, eval = FALSE}
+dep_delay <- 10
+flights |>
+  summarize(m = mean(dep_delay, na.rm = TRUE))
+```
+]
+
+
+---
+# 🗳️ Interactive exercise: Will it run? (solutions)
+
+.pull-left[
+**Snippet 1: 🟢 runs.** The column name `dep_delay` is hard-coded, and data masking finds it inside `df`. Boring, but a useful baseline - indirection only becomes an issue when column names travel through arguments.
+
+**Snippet 2: 🔴 errors.** `object 'dep_delay' not found`. There is no column called `var` in `flights`, so dplyr falls back to the environment - where `var` refers to `dep_delay`, which doesn't exist outside the data frame.
+]
+
+.pull-right[
+**Snippet 3: 🟢 runs.** Embracing `{{ var }}` tunnels the column name into `summarize()`. This is Snippet 2, fixed.
+
+**Snippet 4: 🟢 runs - but what does it return?** The mean of the *column* `dep_delay` (about 12.6 minutes), not `10`. When data and environment offer the same name, the data mask wins. A great feature - until it silently hides a typo. 🙃
+
+**Take-home message:** When wrapping dplyr or ggplot2 code in a function, ask yourself where each name is looked up - in the data or in the environment. If a column name enters through an argument, embrace it: `{{ }}`.
+]
+
+
+---
+# Writing functions with AI assistance
 
 .pull-left-wide[
 Not every function you plan to write is unique, nor is every problem you want to solve functionally. 
 
-ChatGPT, GitHub Copilot and other AI-based coding tools can help you a lot in finding functional solutions you can describe but not verbalize (yet). 
+Claude, ChatGPT, GitHub Copilot and other AI-based coding tools can help you a lot in finding functional solutions you can describe but not verbalize (yet). 
 
-I encourage you to use AI for this purpose, but be aware of the necessity to (a) debug and (b) assign credit where due.
+Later in your coding life, I encourage you to use AI for this purpose, but be aware of the necessity to (a) debug and (b) assign credit where due.
 
 **Let's try it out with one of the following prompts:**
 
@@ -1226,7 +1535,7 @@ name: style
 ---
 # Naming things
 
-**Surprisingly many things can go wrong with naming...**
+## Surprisingly many things can go wrong with naming 
 
 .pull-left-center[
 <br><br><br><br>
@@ -1312,34 +1621,6 @@ day-one # kebab-case
 
 `Credit` [cassert24/Reddit](https://www.reddit.com/r/ProgrammerHumor/comments/cj5g0f/any_pascalcase_supports_out_there/)
 ]
-
-
-
----
-
-# Naming objects and variables *cont.*
-
-.pull-left-center[
-<div align="center">
-<br>
-<img src="pics/alarid-3.png" width=530>
-<br>
-</div>
-
-`Credit` [Alarid et al. 2019](https://pubmed.ncbi.nlm.nih.gov/31549359/)
-]
-
-.pull-right-center[
-<div align="center">
-<br>
-<img src="pics/alarid-1.png" width=530>
-<img src="pics/alarid-2.png" width=530>
-<br>
-</div>
-
-`Credit` [Alarid et al. 2019](https://pubmed.ncbi.nlm.nih.gov/31549359/)
-]
-
 
 
 
@@ -1480,6 +1761,507 @@ babynames %>%
 
 
 
+
+<!-- ############################################ -->
+---
+class: inverse, center, middle
+name: debugging
+
+# Strategies for debugging
+<html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
+
+
+---
+background-image: url("pics/debugging-female-welders.jpg")
+background-size: contain
+background-color: #000000
+
+# Debugging
+
+
+---
+# What's debugging?
+
+.pull-left[
+### Straight from the [Wikipedia](https://en.wikipedia.org/wiki/Debugging)
+
+"Debugging is the process of finding and resolving bugs (defects or problems that prevent correct operation) within computer programs, software, or systems."
+
+### A famous (yet not the first) bug:
+
+The term "bug" was used in an account by computer pioneer [Grace Hopper](https://en.wikipedia.org/wiki/Grace_Hopper) (see on the right). While she was working on a [Mark II](https://en.wikipedia.org/wiki/Harvard_Mark_II) computer at Harvard University, her associates discovered a moth stuck in a relay and thereby impeding operation, whereupon she remarked that they were "debugging" the system. This bug was carefully removed and taped to the log book (see on the right).
+]
+
+.pull-right-center[
+<div align="center">
+<br>
+<img src="pics/grace-hopper.jpg" width="200"/>
+<br>
+<i>Above:</i> Grace Hopper, <i>Below:</i> The bug
+<br>
+<img src="pics/computer-bug-hopper.jpeg" width="300"/> 
+</div>
+]
+
+
+---
+# Why debugging matters
+
+.pull-left-wide[
+The Wikipedia [list of software bugs](https://en.wikipedia.org/wiki/List_of_software_bugs) with significant consequences is growing and you don't want to be on it. 
+
+NASA software engineers are [famous for producing bug-free code](https://www.bugsplat.com/blog/less-serious/why-nasa-code-doesnt-crash/). This was learned the hard and costly way though. Some highlights from space:
+
+- 1962: A booster went off course during launch, resulting in the [destruction of NASA Mariner 1](https://www.youtube.com/watch?v=CkOOazEJcUc) . This was the result of the failure of a transcriber to notice an overbar in a handwritten specification for the guidance program, resulting in an incorrect formula the FORTRAN code.
+- 1999: [NASA's Mars Climate Orbiter was destroyed](https://www.youtube.com/watch?v=lcYkOh4nweE), due to software on the ground generating commands based on parameters in pound-force (lbf) rather than newtons (N)
+- 2004: [NASA's Spirit rover became unresponsive](https://www.youtube.com/watch?v=7V54LRRJaGk) on January 21, 2004, a few weeks after landing on Mars. Engineers found that too many files had accumulated in the rover's flash memory (the problem could be fixed though by deleting unnecessary files, and the Rover lived happily ever after. Until it [froze to death in 2011](https://en.wikipedia.org/wiki/Spirit_(rover)).
+]
+
+.pull-right-small[
+<div align="center">
+<br><br>
+<img src="pics/nasa-coding-error.png" width="400"/>
+<img src="pics/nasa-coding-error-2.png" width="400"/>
+</div>
+]
+
+
+---
+# Why debugging matters (cont.)
+
+<div align="center">
+<br>
+<img src="pics/excel-error-paper-2.jpeg" height="500"/>
+<img src="pics/excel-error-paper.png" height="500"/>
+</div>
+
+
+
+---
+# Why debugging matters (cont.)
+
+.pull-left-center[
+<div align="center">
+<br>
+<img src="pics/fb-socsci1-1.png" width="550"/>
+<img src="pics/fb-socsci1-2.png" width="550"/>
+<img src="pics/fb-socsci1-3.png" width="550"/>
+</div>
+`Source` [Washington Post](https://www.washingtonpost.com/technology/2021/09/10/facebook-error-data-social-scientists/)
+]
+
+
+.pull-right-center[
+<div align="center">
+<br>
+<img src="pics/fb-socsci1-4.png" width="450"/>
+<img src="pics/fb-socsci1-5.png" width="450"/>
+</div>
+`Source` [Solomon Messing / Twitter](https://twitter.com/solomonmg/status/1436742352039669760)
+]
+
+
+
+---
+# A general strategy for debugging
+
+.pull-left-vsmall[]
+
+.pull-right-wide[
+<br>
+<br>
+<br>
+
+## 1. Google
+
+## 2. Reset
+
+## 3. Debug
+
+## 4. Deter
+]
+
+
+---
+# Google
+
+.footnote[<sup>1</sup>Do you get an error message you don't understand? That's good news actually, because the really nasty bugs come without errors. ]
+
+.pull-left-wide2[
+According to [this analysis](https://github.com/noamross/zero-dependency-problems/blob/master/misc/stack-overflow-common-r-errors.md), the most common error types in R are:<sup>1</sup>
+
+1. `Could not find function` errors, usually caused by typos or not loading a required package.
+2. `Error in if` errors, caused by non-logical data or missing values passed to R's `if` conditional statement.
+3. `Error in eval` errors, caused by references to objects that don't exist.
+4. `Cannot open` errors, caused by attempts to read a file that doesn't exist or can't be accessed.
+5. `no applicable method` errors, caused by using an object-oriented function on a data type it doesn't support.
+6. `subscript out of bounds` errors, caused by trying to access an element or dimension that doesn't exist
+7. Errors caused by failing to install/compile/load a package.
+]
+
+--
+
+.pull-right-small2[
+Whenever you see an error message, start by [googling](https://lmgtfy.app/?q=Error+in+interpretative_method+%3A+%20+%20could+not+find+function+%22interpretative_method%22&iie=1) it. Improve your chances of a good match by removing any variable names or values that are specific to your problem. Also, look for [Stack Overflow](https://stackoverflow.com/questions/tagged/r) posts and list of answers.
+
+<div align="center">
+<img src="pics/google-programming.jpeg" height="220"/>
+</div>
+
+]
+
+
+---
+# Reset
+
+.pull-left[
+- If at first you don't succeed, try exactly the same thing again.
+- Have you tried turning it off and on again?
+- Do you use `rm(list = ls())`? Don't. Packages remain loaded, options and environment variables set, ... all possible sources of error!
+- A fresh start clears the workspace, resets options, environment variables, and the path.
+- While we're at it, check out James Wade's advice ["How I set up RStudio for Efficient Coding" (YouTube)](https://www.youtube.com/watch?v=p-r-AWR3-Es).
+]
+
+.pull-right[
+<div align="center">
+<img src="pics/restart-r-1.png" width="350"/><br>
+<img src="pics/restart-r-2.png" width="350"/>
+</div>
+]
+
+
+---
+# Debug
+
+### Make the error repeatable. 
+
+- Execute the code many times as you consider and reject hypotheses. To make that iteration as quick possible, it’s worth some upfront investment to make the problem both easy and fast to reproduce.
+- Work with reproducible and minimal examples by removing innocuous code and simplifying data.
+- Consider automated testing. Add some nearby tests to ensure that existing good behaviour is preserved. 
+
+### Track the error down.
+
+- Execute code step by step and inspect intermediate outputs. 
+- Adopt the scientific method: Generate hypotheses, design experiments to test them, and record your results. 
+
+### Once found, fix the error and test it.
+
+- Ensure you haven’t introduced any new bugs in the process. 
+- Make sure to carefully record the correct output, and check against the inputs that previously failed.
+- Reset and run again to make sure everything still works. 
+
+
+---
+# Deter
+
+.pull-left-wide2[
+
+### Defensive programming
+
+- **Pay attention.** Do results make sense? Do they look different from previous results? Why?
+- **Know what you're doing**, and what you're expecting.
+  - Avoid functions that return different types of output depending on their input, e.g., `[]` and `sapply()`.
+  - Be strict about what you accept (e.g., only scalars). 
+  - Avoid functions that use non-standard evaluation (e.g., `with()`)
+- **Fail fast**.
+  - As soon as something wrong is discovered, signal an error. 
+  - Add tests (e.g., with the `testthat` package).
+  - Practice good condition/exception handling, e.g., with `try()` and `tryCatch()`. 
+  - Write error messages for humans.
+
+]
+
+.pull-right-small3[
+### Transparency
+
+- Collaborate! [Pair programming](https://en.wikipedia.org/wiki/Pair_programming) is an established software development technique that increases code robustness. It also works [from remote](https://ivelasq.rbind.io/blog/vscode-live-share/).
+- Be transparent! Let others access your code and comment on it.
+
+<div align="center">
+<img src="pics/pair-programming-its-not-for-everyone.jpeg" width="350"/>
+</div>
+]
+
+
+
+---
+# Debugging R: What you get
+
+<br>
+<br>
+<tt>
+Error : .onLoad failed in loadNamespace() for 'rJava', details: <br>
+call: dyn.load(file, DLLpath = DLLpath, ...) <br>
+error: unable to load shared object '/Users/janedoe/Library/R/3.6/library/rJava/libs/rJava.so':  <br>
+libjvm.so: cannot open shared object file: No such file or directory  <br>
+Error: loading failed  <br>
+Execution halted  <br>
+ERROR: loading failed  <br>
+* removing '/Users/janedoe/Library/R/3.6/library/rJava/' <br>
+Warning in install.packages : <br>
+installation of package 'rJava' had non-zero exit status
+</tt>
+
+<br>
+`Credit` [Jenny Bryan](https://github.com/jennybc/debugging)
+
+
+---
+# Debugging R: What you see
+
+
+<br>
+<br>
+<tt>
+<span style = "color:red">Error</span> : blah <span style = "color:red">failed</span> blah blah() blah 'blah', blah: <br>
+call: blah.blah(blah, blah = blah, ...) <br>
+<span style = "color:red">error</span>: <span style = "color:red">unable</span> to blah blah blah '/blah/blah/blah/blah/blah/blah/blah/blah/blah.so':  <br>
+blah.so: <span style = "color:red">cannot</span> open blah blah blah: <span style = "color:red">No</span> blah blah blah blah  <br>
+<span style = "color:red">Error</span>: blah <span style = "color:red">failed</span>  <br>
+blah blah  <br>
+<span style = "color:red">ERROR</span>: blah <span style = "color:red">failed</span>  <br>
+* removing '/blah/blah/blah/blah/blah/blah/blah/' <br>
+<span style = "color:red">Warning</span> in blah.blah : <br>
+blah of blah 'blah' blah blah-blah blah blah
+</tt>
+
+<br>
+`Credit` [Jenny Bryan](https://github.com/jennybc/debugging)
+
+
+---
+# Strategies to debug your R code
+
+Sometimes the mistake in your code is hard to diagnose, and googling doesn't help. Here are a couple of strategies to debug your code:
+
+- Use `traceback()` to determine where a given error is occurring.
+
+- Output diagnostic information in code with `print()`, `cat()` or `message()` statements.
+
+- Use `browser()` to open an interactive debugger before the error
+
+- Use `debug()` to automatically open a debugger at the start of a function call.
+
+- Use `trace()` to make temporary code modifications inside a function that you don't have easy access to.
+
+
+---
+# Locating errors with traceback()
+
+.pull-left[
+
+### Motivation and usage
+- When an error occurs with an unidentifiable error message or an error message that you are in principle familiar with but cannot locate its sources, the `traceback()` function comes in handy.
+- The `traceback()` function prints the sequence of calls that led to an uncaught error.
+- The `traceback()` output reads from bottom to top.
+- Note that errors caught via `try()` or `tryCatch()` do not generate a traceback!
+-  If you’re calling code that you `source()`d into R, the traceback will also display the location of the function, in the form `filename.r#linenumber`. 
+]
+
+--
+
+.pull-right[
+### Example
+
+In the call sequence below, the execution of `g()` triggers an error:
+
+```{r, eval = FALSE}
+f <- function(x) x + 1
+g <- function(x) f(x)
+g("a")
+```
+
+```r 
+#> Error in x + 1 : non-numeric argument to binary operator
+```
+
+Doing the traceback reveals that the function call f(x) is what lead to the error:
+
+```{r, eval = FALSE}
+traceback()
+```
+
+```r 
+#> 2: f(x) at #1
+#> 1: g("a")
+```
+]
+
+---
+# Interactive debugging with browser()
+
+.pull-left[
+### Motivation and usage
+- Sometimes, you need more information than the precise location of an error in a function to fix it. 
+- The interactive debugger lets you pause the run of a function and interactively explore its state.
+- Two options to enter the interactive debugger: 
+  1. Through RStudio's "Rerun with Debug" tool, shown to the right of an error message.
+  2. You can insert a call to `browser()` into the function at the stage where you want to pause, and re-run the function.
+- In either case, you’ll end up in an interactive environment inside the function where you can run arbitrary R code to explore the current state. You’ll know when you’re in the interactive debugger because you get a special prompt, `Browse[1]>`. 
+]
+
+--
+
+.pull-right[
+### Example
+
+```{r, eval = FALSE}
+h <- function(x) x + 3
+g <- function(b) {
+  browser() #<<
+  h(b)
+}
+g(10)
+```
+
+Some useful things to do are:
+
+1. Use `ls()` to determine what objects are available in the current
+   environment.
+2. Use `str()`, `print()` etc. to examine the objects.
+3. Use `n` to evaluate the next statement.
+4. Use `s`: like `n` but also step into function calls.
+5. Use `where` to print a stack trace (→ traceback).
+6. Use `c` to exit debugger and continue execution.
+7. Use `Q` to exit debugger and return to the R prompt.
+]
+
+
+
+---
+# Debugging other peoples' code
+
+
+.pull-left[
+### Motivation
+- Sometimes the error is outside your code in a package you're using, you might still want to be able to debug.
+- Two options:
+  1. Get a local version of the package code and debug as if it were your own.
+  2. Use functions which which allow you to start a browser in existing functions, including `recover()` and `debug()`.
+]
+
+.pull-right[
+]
+
+
+
+---
+# Debugging other peoples' code (cont.)
+
+.pull-left-small[
+### Motivation
+- `recover()` serves as an alternative error handler which you activate by calling `options(error = recover)`.
+- You can then select from a list of current calls to browse.
+- `options(error = NULL)` turns off this debugging mode again.
+- A simpler alternative is `options(error = browser)`, but this only allows you to browse the call where the error occurred.
+]
+
+--
+
+.pull-right-wide[
+### Example
+
+- Activate debugging mode; then execute (flawed) function:
+
+```{r, eval = FALSE}
+options(error = recover) #<<
+lm(mpg ~ wt, data = "mtcars")
+```
+
+```r 
+Error in model.frame.default(formula = mpg ~ wt, data = "mtcars", drop.unused.levels = TRUE) 
+ 'data' must be a data.frame, environment, or list
+ 
+Enter a frame number, or 0 to exit   
+
+1: lm(mpg ~ wt, data = "mtcars")
+2: eval(mf, parent.frame())
+3: eval(mf, parent.frame())
+
+Selection: 
+```
+
+- Deactivate debugging mode: 
+
+```{r, eval = FALSE}
+options(error = NULL) #<<
+```
+]
+
+---
+# Debugging other peoples' code (cont.)
+
+.pull-left[
+### Motivation
+- `debug()` activates the debugger on any function, including those in packages (see on the right). `undebug()` deactivates the debugger again.
+- Some functions in another package are easier to find than others. There are
+  - *exported* functions which are available outside of a package and
+  - *internal* functions which are only available within a package.
+- To find (and debug) exported functions, use the `::` syntax, as in `ggplot2::ggplot`.
+- To find un-exported functions, use the `:::` syntax, as in `ggplot2:::check_required_aesthetics`.
+]
+
+--
+
+.pull-right[
+### Example
+
+- Activate debugging mode for `lm()` function; then execute function:
+
+```{r, eval = FALSE}
+debug(stats::lm) #<<
+lm(mpg ~ weight, data = "mtcars")
+```
+
+- Interactive debugging mode for `lm()` is entered; use the common `browser()` functionality to navigate:
+
+```r 
+debugging in: lm(mpg ~ weight, data = mtcars)
+debug: {
+    ret.x <- x
+    ...
+Browse[2]> 
+```
+
+- Deactivate debugging mode: 
+
+```{r, eval = FALSE}
+undebug(stats::lm) #<<
+```
+]
+
+
+---
+# Debugging in RStudio
+
+<div align="center">
+<img src="pics/rstudio-debug-mode.png" width="1100"/>
+</div>
+
+
+
+---
+# More on debugging R
+
+.pull-left[
+<br><br><br>
+
+### Further reading
+
+- [12-minute video](https://vimeo.com/99375765) on debugging in R
+- Jenny Bryan's [talk on debugging](https://github.com/jennybc/debugging) at  rstudio::conf 2020
+- Jenny Bryan and Jim Hester's "What They Forgot to Teach You About R", Chapter 11: [Debugging R code](https://rstats.wtf/debugging-r)
+- Jonathan McPherson's [Debugging with RStudio](https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio)
+]
+
+.pull-right[
+<br>
+<div align="center">
+<img src="pics/classy-bear-debugging.jpeg" width="450"/>
+</div>
+]
+
+
 ---
 # Next steps
 
@@ -1487,10 +2269,10 @@ babynames %>%
 
 ### Assignment
 
-Assignment 1 is online! You have a bit more than a week to work on it - final uploading deadline is Sep 23, 9:30am CET.
+Assignment 1 is online! You have a bit more than a week to work on it.
 
 ### Next lecture
 
-**Programming II** Buckle up and bring coffee, because it'll get both exciting and tedious at the same time. We're going to iterate, automate, schedule, and debug.
+**Programming II** Buckle up and bring coffee, because it'll get both exciting and tedious at the same time. We're going to iterate, automate, and schedule.
 
 

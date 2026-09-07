@@ -9,6 +9,12 @@ body { font-family: 'Droid Serif', 'Palatino Linotype', 'Book Antiqua', Palatino
                        font-size: 130%;    /* Regular text */
                      }
 
+/* Turn off Fira Code ligatures so operators like |> and <- display literally */
+.remark-code, .remark-inline-code {
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+
 .exercise {
  background-color: #BF2231;
  text-shadow: none;
