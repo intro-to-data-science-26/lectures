@@ -302,7 +302,7 @@ There is much more to learn about functions and [functional programming](https:/
 
 ### Why creating functions?
 
-That's a legit question. There are 22,000+ **packages** on [CRAN](https://cran.r-project.org/) (and many, many more on GitHub and other repositories) containing zillions of functions. Why should you create yet another one?
+That's a legit question. There are 24,000+ **packages** on [CRAN](https://cran.r-project.org/) (and many, many more on GitHub and other repositories) containing zillions of functions. Why should you create yet another one?
 - Every data science project is unique. There are problems only you have to solve. 
 - For problems that are repetitive, you'll quickly look for options to automate the task.
 - Functions are a great way to automate.
