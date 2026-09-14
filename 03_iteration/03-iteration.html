@@ -93,7 +93,7 @@ background-color: #000000
 
 - A simple approach is to copy-and-paste code with minor modifications (→ "[duplicate code](https://en.wikipedia.org/wiki/Duplicate_code)", → "[copy-and-paste programming](https://en.wikipedia.org/wiki/Copy-and-paste_programming)"). This is lazy, error-prone, not very efficient, and violates the "[Don't repeat yourself](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)" (DRY) principle. 
 - In R, [vectorization](https://adv-r.hadley.nz/perf-improve.html#vectorise), that is applying a function to every element of a vector at once, already does a good share of iteration for us.
-- `for()` [loops](https://r4ds.hadley.nz/iteration.html) are intuitive and straightforward to build, but sometimes not very efficient.
+- `for()` [loops](https://r4ds.hadley.nz/iteration.html) are intuitive and straightforward to build, but involve repetitive bookkeeping (more on that in a minute).
 - Finally, we learned about functions. Now, we learn how to unleash their power by applying them to anything we interact with in R at scale.
 
 
@@ -163,6 +163,113 @@ R&gt; x_doubled
 ]
 
 
+---
+
+# Iteration with for() loops
+
+.pull-left[
+### Anatomy of a for() loop
+
+Every `for()` loop has three components:
+
+1. **Output**: a container for the results, allocated *before* the loop starts.
+2. **Sequence**: what to loop over. `seq_along(x)` generates one index per element of `x`.
+3. **Body**: the code that does the actual work, run once per iteration.
+]
+
+--
+
+.pull-right[
+### Example
+
+Compute the median of every column of a data frame:
+
+
+``` r
+R&gt; df &lt;- starwars %&gt;%
++   select(height, mass, birth_year)
+R&gt; 
+R&gt; medians &lt;- numeric(ncol(df))     # output
+R&gt; for (i in seq_along(df)) {       # sequence
++   medians[i] &lt;- median(df[[i]],   # body
++                        na.rm = TRUE)
++ }
+R&gt; medians
+```
+
+```
+   [1] 180  79  52
+```
+]
+
+---
+
+# Iteration with for() loops: good practice
+
+.pull-left[
+### Two classic rookie mistakes
+
+**1. Growing the output.** `c(medians, ...)` copies the entire vector in every iteration — fine for 10 elements, painfully slow for 100,000. Always pre-allocate.
+
+**2. `1:length(x)` as sequence.** If `x` happens to have length zero, `1:0` yields the sequence `c(1, 0)` — the loop runs twice on an empty object and fails cryptically. `seq_along(x)` handles this edge case correctly.
+]
+
+--
+
+.pull-right[
+### How not to do it
+
+
+``` r
+R&gt; medians &lt;- c()                    # no! grows...
+R&gt; for (i in 1:length(df)) {         # no! 1:0 bug
++   medians &lt;- c(medians,
++                median(df[[i]], na.rm = TRUE))
++ }
+```
+
+### Related: while() loops
+
+When you don't know the number of iterations in advance (e.g., "sample until we have 50 valid cases"), use a `while()` loop:
+
+
+``` r
+R&gt; while (n_valid &lt; 50) {
++   # sample, validate, increment n_valid
++ }
+```
+]
+
+
+---
+
+# From loops to functionals
+
+.pull-left[
+### for() loops...
+
+- ... are **not slow** — that reputation is outdated; poorly written loops (see previous slide) are slow.
+- ... are maximally explicit: every step is visible, no new vocabulary needed.
+- ... are the right tool when iterations **depend on each other**, e.g., simulations where step *t* needs the result of step *t-1*.
+- **But:** the interesting part (the body) is buried in bookkeeping — output, sequence, index.
+- **And:** the bookkeeping is repetitive and error-prone. It's the same for every loop — so why write it again and again?
+]
+
+--
+
+.pull-right[
+### Functionals (map() &amp; friends)...
+
+- ... wrap the loop machinery for you: allocation, sequencing, and collection happen inside the function.
+- ... express intent: `map_dbl(df, median)` says *what* happens, not *how*.
+- ... eliminate the index bugs from the previous slide by design.
+- ... are just loops under the hood — someone else wrote the boilerplate (in fast C code, by the way).
+
+&lt;br&gt;
+
+&gt; *"Of course someone has to write loops. It doesn't have to be you."*
+&gt; — [Jenny Bryan](https://github.com/jennybc)
+]
 
 
 ---
@@ -302,178 +409,310 @@ The `purrr` function set is quite comprehensive. Be sure to check out the [cheat
 
 
 ---
-# Another example
+
+# Iteration with purrr: specifying the function
 
 .pull-left[
-## Task
-
-Let's say we want to calculate the mean and standard deviation of height and mass for each species in the `starwars` dataset.
+### Three ways to specify `.f`
 
 
 ``` r
-R&gt; # Load the starwars dataset
-R&gt; data(starwars)
-R&gt; 
-R&gt; # Custom function for calculations
-R&gt; calc_stats &lt;- function(df) {
-+   df %&gt;%
-+     summarise(
-+       height_mean = mean(height, na.rm = TRUE),
-+       height_sd = sd(height, na.rm = TRUE),
-+       mass_mean = mean(mass, na.rm = TRUE),
-+       mass_sd = sd(mass, na.rm = TRUE)
-+     )
-+ }
+R&gt; # a named function
+R&gt; map_dbl(mtcars, mean)
+```
+
+```
+          mpg        cyl       disp         hp       drat         wt       qsec 
+    20.090625   6.187500 230.721875 146.687500   3.596563   3.217250  17.848750 
+           vs         am       gear       carb 
+     0.437500   0.406250   3.687500   2.812500
+```
+
+``` r
+R&gt; # an anonymous function (base R, &gt;= 4.1)
+R&gt; map_dbl(mtcars, \(x) length(unique(x)))
+```
+
+```
+    mpg  cyl disp   hp drat   wt qsec   vs   am gear carb 
+     25    3   27   22   22   29   30    2    2    3    6
+```
+
+``` r
+R&gt; # a purrr-style formula ("lambda")
+R&gt; map_dbl(mtcars, ~ length(unique(.x)))
+```
+
+```
+    mpg  cyl disp   hp drat   wt qsec   vs   am gear carb 
+     25    3   27   22   22   29   30    2    2    3    6
 ```
 ]
 
 --
 
 .pull-right[
+### Bonus: extracting elements
+
+Instead of a function, you can pass a name or position to extract elements from nested lists:
+
 
 ``` r
-R&gt; # Group by species and apply the custom function
-R&gt; species_stats &lt;- starwars %&gt;%
-+   group_by(species) %&gt;%
-+   nest() # Nesting the data
-R&gt; species_stats
+R&gt; fellowship &lt;- list(
++   list(name = "Frodo", race = "Hobbit", age = 51),
++   list(name = "Gandalf", race = "Maia", age = 2019),
++   list(name = "Legolas", race = "Elf", age = 2931)
++ )
+R&gt; map_chr(fellowship, "name") # by name
 ```
 
 ```
-   # A tibble: 38 × 2
-   # Groups:   species [38]
-      species        data              
-      &lt;chr&gt;          &lt;list&gt;            
-    1 Human          &lt;tibble [35 × 13]&gt;
-    2 Droid          &lt;tibble [6 × 13]&gt; 
-    3 Wookiee        &lt;tibble [2 × 13]&gt; 
-    4 Rodian         &lt;tibble [1 × 13]&gt; 
-    5 Hutt           &lt;tibble [1 × 13]&gt; 
-    6 &lt;NA&gt;           &lt;tibble [4 × 13]&gt; 
-    7 Yoda's species &lt;tibble [1 × 13]&gt; 
-    8 Trandoshan     &lt;tibble [1 × 13]&gt; 
-    9 Mon Calamari   &lt;tibble [1 × 13]&gt; 
-   10 Ewok           &lt;tibble [1 × 13]&gt; 
-   # ℹ 28 more rows
+   [1] "Frodo"   "Gandalf" "Legolas"
 ```
+
+``` r
+R&gt; map_dbl(fellowship, 3) # by position
+```
+
+```
+   [1]   51 2019 2931
+```
+
+This is extremely handy for deeply nested data, e.g., parsed JSON from web APIs (more on that soon!).
 ]
 
 
 ---
-# Another example
+
+# Iteration with purrr: a common use case
 
 .pull-left[
-## Task
+### Reading many files at once
 
-Let's say we want to calculate the mean and standard deviation of height and mass for each species in the `starwars` dataset.
+- A classic data science scenario: your data live in many files of the same structure — one per year, country, survey wave, ...
+- Instead of writing one `read_csv()` call per file, let `map()` do the work:
 
 
 ``` r
-R&gt; # Load the starwars dataset
-R&gt; data(starwars)
-R&gt; 
-R&gt; # Custom function for calculations
-R&gt; calc_stats &lt;- function(df) {
-+   df %&gt;%
-+     summarise(
-+       height_mean = mean(height, na.rm = TRUE),
-+       height_sd = sd(height, na.rm = TRUE),
-+       mass_mean = mean(mass, na.rm = TRUE),
-+       mass_sd = sd(mass, na.rm = TRUE)
-+     )
-+ }
+R&gt; paths &lt;- list.files("data/polls",
++                     pattern = "\\.csv$",
++                     full.names = TRUE)
+R&gt; polls_df &lt;- paths %&gt;%
++   map(read_csv) %&gt;% # list of data frames
++   list_rbind()      # bind into one data frame
 ```
+
+- `map(paths, read_csv)` is just shorthand for `list(read_csv(paths[[1]]), read_csv(paths[[2]]), ...)`.
 ]
+
+--
 
 .pull-right[
+### More than one input
+
+- `map2(.x, .y, .f)` iterates over two vectors in parallel; `pmap(.l, .f)` generalizes to any number of arguments.
+- The `walk()` family works like `map()` but is called for its side effects (saving, printing) and returns no output:
+
 
 ``` r
-R&gt; # Group by species and apply the custom function
-R&gt; species_stats &lt;- starwars %&gt;%
-+   group_by(species) %&gt;%
-+   nest() %&gt;% # Nesting the data
-+   # purrr magic
-+   mutate(stats = map(data, calc_stats))
-R&gt; species_stats
+R&gt; # save one plot per group
+R&gt; walk2(plots, paths,
++       \(plot, path) ggsave(path, plot))
 ```
 
-```
-   # A tibble: 38 × 3
-   # Groups:   species [38]
-      species        data               stats           
-      &lt;chr&gt;          &lt;list&gt;             &lt;list&gt;          
-    1 Human          &lt;tibble [35 × 13]&gt; &lt;tibble [1 × 4]&gt;
-    2 Droid          &lt;tibble [6 × 13]&gt;  &lt;tibble [1 × 4]&gt;
-    3 Wookiee        &lt;tibble [2 × 13]&gt;  &lt;tibble [1 × 4]&gt;
-    4 Rodian         &lt;tibble [1 × 13]&gt;  &lt;tibble [1 × 4]&gt;
-    5 Hutt           &lt;tibble [1 × 13]&gt;  &lt;tibble [1 × 4]&gt;
-    6 &lt;NA&gt;           &lt;tibble [4 × 13]&gt;  &lt;tibble [1 × 4]&gt;
-    7 Yoda's species &lt;tibble [1 × 13]&gt;  &lt;tibble [1 × 4]&gt;
-    8 Trandoshan     &lt;tibble [1 × 13]&gt;  &lt;tibble [1 × 4]&gt;
-    9 Mon Calamari   &lt;tibble [1 × 13]&gt;  &lt;tibble [1 × 4]&gt;
-   10 Ewok           &lt;tibble [1 × 13]&gt;  &lt;tibble [1 × 4]&gt;
-   # ℹ 28 more rows
-```
+&lt;div align="center"&gt;
+&lt;img src="pics/purrr.png" height=170&gt;
+&lt;/div&gt;
 ]
+
 
 ---
-# Another example
+
+# Iteration with purrr: dealing with failure
 
 .pull-left[
-## Task
+### One bad apple...
 
-Let's say we want to calculate the mean and standard deviation of height and mass for each species in the `starwars` dataset.
+When you apply a function to many inputs, a single failure kills the entire operation:
 
 
 ``` r
-R&gt; # Load the starwars dataset
-R&gt; data(starwars)
-R&gt; 
-R&gt; # Custom function for calculations
-R&gt; calc_stats &lt;- function(df) {
-+   df %&gt;%
-+     summarise(
-+       height_mean = mean(height, na.rm = TRUE),
-+       height_sd = sd(height, na.rm = TRUE),
-+       mass_mean = mean(mass, na.rm = TRUE),
-+       mass_sd = sd(mass, na.rm = TRUE)
-+     )
-+ }
+R&gt; x &lt;- list(4, 16, "sixty-four", 256)
+R&gt; map_dbl(x, log2)
 ```
+
+```
+   Error in `map_dbl()`:
+   ℹ In index: 3.
+   Caused by error in `.f()`:
+   ! non-numeric argument to mathematical function
+```
+
+Annoying with 4 elements — painful when input 3,912 of 4,000 fails after an hour of scraping or model fitting, and all completed results are lost.
 ]
 
+--
+
 .pull-right[
+### ...doesn't have to spoil the barrel
+
+`possibly()` takes a function and returns a modified version that never throws an error but returns a default value instead:
+
 
 ``` r
-R&gt; # Group by species and apply the custom function
-R&gt; species_stats &lt;- starwars %&gt;%
+R&gt; map_dbl(x, possibly(log2, otherwise = NA_real_))
+```
+
+```
+   [1]  2  4 NA  8
+```
+
+Back to the many-files example — read what can be read, skip the rest:
+
+
+``` r
+R&gt; paths %&gt;%
++   map(possibly(read_csv, otherwise = NULL)) %&gt;%
++   list_rbind() # NULLs are dropped automatically
+```
+
+Also check out the siblings `safely()` (returns result and error) and `quietly()` (captures messages and warnings).
+]
+
+
+
+---
+# Iterating over columns: across()
+
+.pull-left[
+### The problem
+
+Applying the same function to many columns is one of the most common iteration tasks. Here's an example doing it the copy-and-paste way:
+
+
+``` r
+R&gt; summarise(
++   height_mean = mean(height, na.rm = TRUE),
++   height_sd   = sd(height, na.rm = TRUE),
++   mass_mean   = mean(mass, na.rm = TRUE),
++   mass_sd     = sd(mass, na.rm = TRUE)
++ )
+```
+
+The same pattern, repeated four times — that's a violation of the DRY principle. Imagine doing this for 20 variables...
+]
+
+--
+
+.pull-right[
+### The solution: across()
+
+`dplyr`'s `across()` applies one or more functions to a selection of columns inside `summarize()` or `mutate()`:
+
+
+``` r
+R&gt; starwars %&gt;%
 +   group_by(species) %&gt;%
-+   nest() %&gt;% # Nesting the data
-+   # purrr magic
-+   mutate(stats = map(data, calc_stats)) %&gt;% 
-+   select(species, stats) %&gt;% # Select columns
-+   unnest(stats) # Unnest the data
-R&gt; species_stats
++   summarize(
++     across(c(height, mass),
++            list(mean = \(x) mean(x, na.rm = TRUE),
++                 sd   = \(x) sd(x, na.rm = TRUE)))) %&gt;%
++   print(n = 5)
 ```
 
 ```
    # A tibble: 38 × 5
-   # Groups:   species [38]
-      species        height_mean height_sd mass_mean mass_sd
-      &lt;chr&gt;                &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
-    1 Human                 178      12.0       81.3    19.3
-    2 Droid                 131.     49.1       69.8    51.0
-    3 Wookiee               231       4.24     124      17.0
-    4 Rodian                173      NA         74      NA  
-    5 Hutt                  175      NA       1358      NA  
-    6 &lt;NA&gt;                  175      12.4       81      31.2
-    7 Yoda's species         66      NA         17      NA  
-    8 Trandoshan            190      NA        113      NA  
-    9 Mon Calamari          180      NA         83      NA  
-   10 Ewok                   88      NA         20      NA  
-   # ℹ 28 more rows
+     species  height_mean height_sd mass_mean mass_sd
+     &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+   1 Aleena            79        NA        15      NA
+   2 Besalisk         198        NA       102      NA
+   3 Cerean           198        NA        82      NA
+   4 Chagrian         196        NA       NaN      NA
+   5 Clawdite         168        NA        55      NA
+   # ℹ 33 more rows
 ```
 ]
+
+
+---
+# Iterating over columns: across() *cont.*
+
+.pull-left[
+### Selecting columns flexibly
+
+The first argument of `across()` uses the same tidy-select syntax you know from `select()`, including helpers:
+
+
+``` r
+R&gt; # all numeric columns
+R&gt; starwars %&gt;%
++   summarize(across(where(is.numeric),
++                    \(x) median(x, na.rm = TRUE)))
+R&gt; 
+R&gt; # all (non-grouping) columns
+R&gt; starwars %&gt;%
++   summarize(across(everything(), n_distinct))
+R&gt; 
+R&gt; # turn all character columns into factors
+R&gt; starwars %&gt;%
++   mutate(across(where(is.character), as.factor))
+```
+
+The `.names` argument controls the naming of output columns, e.g. `.names = "{.fn}_{.col}"`.
+]
+
+--
+
+.pull-right[
+### Related: if_any() and if_all()
+
+`across()` has two useful cousins for `filter()`: `if_any()` and `if_all()` combine column-wise logical checks into a single condition.
+
+
+``` r
+R&gt; # rows with missings in height OR mass
+R&gt; starwars %&gt;%
++   filter(if_any(c(height, mass), is.na)) %&gt;%
++   select(name, height, mass) %&gt;%
++   print(n = 5)
+```
+
+```
+   # A tibble: 28 × 3
+     name           height  mass
+     &lt;chr&gt;           &lt;int&gt; &lt;dbl&gt;
+   1 Wilhuff Tarkin    180    NA
+   2 Mon Mothma        150    NA
+   3 Arvel Crynyd       NA    NA
+   4 Finis Valorum     170    NA
+   5 Rugor Nass        206    NA
+   # ℹ 23 more rows
+```
+]
+
+
+---
+# Iteration in a nutshell: the map family
+
+| Function | What it does | Think of it as... |
+|----------|--------------|-------------------|
+| `map(x, f)` | Applies `f` to every element of `x`; returns a **list** | A conveyor belt: every item passes through the same machine; the outputs are collected in separate boxes |
+| `map_dbl()`, `map_chr()`, `map_lgl()`, `map_int()` | Like `map()`, but returns an **atomic vector** of the promised type | The same conveyor belt with strict quality control at the exit: only one type of product leaves the factory |
+| `map2(x, y, f)` | Iterates over **two** vectors in parallel | A zipper: pairs up the elements of two vectors, one pair per iteration |
+| `pmap(l, f)` | Iterates over **any number** of arguments simultaneously | A cook working through a recipe table: each row holds the ingredients for one dish |
+| `walk(x, f)`, `walk2()` | Like `map()`/`map2()`, but called for **side effects**; returns nothing | A mail carrier: delivers the letters (saves files, prints output) and comes back empty-handed |
+
+
+---
+# Iteration in a nutshell: helpers and friends
+
+| Function | What it does | Think of it as... |
+|----------|--------------|-------------------|
+| `possibly(f, otherwise)` | Wraps `f`; on error returns a **default value** instead of failing | An airbag: a crash doesn't end the journey — you get a placeholder and keep driving |
+| `safely(f)` | Wraps `f`; always returns both **result and error** | A flight recorder: keeps the result *and* a record of what went wrong for later inspection |
+| `quietly(f)` | Wraps `f`; captures **messages, warnings, and printed output** | A court stenographer: nothing is said out loud, but everything is on record |
+| `list_rbind()` | Binds a **list of data frames** into one data frame | A stapler: stacks the pages into a single document |
+| `across(cols, f)` | Applies `f` to a **selection of columns** inside `summarize()`/`mutate()` (honorary member from dplyr) | A car wash: every selected column gets the same treatment |
 
 
 
@@ -1071,7 +1310,7 @@ background-color: #000000
 - The R package [`taskscheduleR`](https://cran.r-project.org/web/packages/taskscheduleR/vignettes/taskscheduleR.html) provides a programmable R interface to the WTS.
 
 &lt;div align="center"&gt;
-&lt;img src="pics/windows-task-scheduler.png" width="400"/&gt;
+&lt;img src="pics/windows-task-scheduler.png" width="300"/&gt;
 &lt;/div&gt;
 ]
 
@@ -1106,7 +1345,7 @@ R&gt; str(tasks)
 ---
 # Scheduling scripts and processes on a Mac
 
-.footnote[&lt;sup&gt;1&lt;/sup&gt;For more resources on scheduling with `launchd`, check out [this](https://babichmorrowc.github.io/post/launchd-jobs/) and [this](https://towardsdatascience.com/a-step-by-step-guide-to-scheduling-tasks-for-your-data-science-project-d7df4531fc41).]
+.footnote[&lt;sup&gt;1&lt;/sup&gt;For more resources on `launchd`, check out [this](https://babichmorrowc.github.io/post/launchd-jobs/).]
 
 .pull-left-small3[
 ### Scheduling options
@@ -1145,26 +1384,6 @@ R&gt; ## Delete task
 R&gt; cron_rm("WikiScraperR_1min", ask = TRUE)
 ```
 ]
-
-
-
-
-
----
-# Next steps
-
-&lt;br&gt;
-
-### Assignment 1 and Quiz 1
-
-Don't forget to submit your solutions for Assignment 1. Also, Quiz 1 is online!
-
-
-### Next lecture
-
-We're going to dig into the world wide web...
-
-&lt;b&gt;Important:&lt;/b&gt; The lecture is going to take place on Wednesday, 8-10am, in the Forum! If your regular lab is schedule for that slot, please visit the lab session at the ordinary lecture slot instead (Mon, 10-12h). The lecture will be recorded and made available in case you cannot attend.
 
 
 
