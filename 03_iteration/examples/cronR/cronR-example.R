@@ -14,8 +14,9 @@ cron_add(cmd, frequency = '*/15 * * * *',
 ## Check number of running cronR jobs
 cron_njobs()
 
-## Check cronR jobs
+## Check cronR jobs 
 cron_ls()
 
 ## Delete task
 cron_rm("ScraperR_1min", ask = TRUE)
+

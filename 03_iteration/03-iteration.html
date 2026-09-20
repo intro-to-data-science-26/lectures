@@ -204,7 +204,7 @@ R&gt; medians
 
 ---
 
-# Iteration with for() loops: good practice
+# Iteration with `for()` loops: good practice
 
 .pull-left[
 ### Two classic rookie mistakes
@@ -228,14 +228,16 @@ R&gt; for (i in 1:length(df)) {         # no! 1:0 bug
 + }
 ```
 
-### Related: while() loops
+### Related: `while()` loops
 
 When you don't know the number of iterations in advance (e.g., "sample until we have 50 valid cases"), use a `while()` loop:
 
 
 ``` r
 R&gt; while (n_valid &lt; 50) {
-+   # sample, validate, increment n_valid
++   # sample, validate
++   # increment n_valid
++   n_valid &lt;- n_valid + 1
 + }
 ```
 ]
@@ -246,7 +248,7 @@ R&gt; while (n_valid &lt; 50) {
 # From loops to functionals
 
 .pull-left[
-### for() loops...
+### `for()` loops...
 
 - ... are **not slow** — that reputation is outdated; poorly written loops (see previous slide) are slow.
 - ... are maximally explicit: every step is visible, no new vocabulary needed.
@@ -258,7 +260,7 @@ R&gt; while (n_valid &lt; 50) {
 --
 
 .pull-right[
-### Functionals (map() &amp; friends)...
+### Functionals (`map()` &amp; friends)...
 
 - ... wrap the loop machinery for you: allocation, sequencing, and collection happen inside the function.
 - ... express intent: `map_dbl(df, median)` says *what* happens, not *how*.

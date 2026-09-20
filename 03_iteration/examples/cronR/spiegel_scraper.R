@@ -2,7 +2,7 @@
 library(tidyverse)
 library(magrittr)
 library(httr)
-setwd("/Users/s.munzert/Documents/github/intro-to-data-science-25/lectures/03-iteration/examples/cronR")
+setwd("/Users/s.munzert/Documents/github/intro-to-data-science-26/lectures/03_iteration/examples/cronR")
 url <- "http://www.spiegel.de/schlagzeilen/"
 url_out <- GET(url, add_headers(from = "eddie@datacollection.com"))
 datetime <- str_replace_all(Sys.time(), "[ :]", "-")

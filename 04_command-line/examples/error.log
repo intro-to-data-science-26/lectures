@@ -1,0 +1,10 @@
+[2026-09-14 03:00:01] INFO  Starting daily scraper job (spiegel_scraper.R)
+[2026-09-14 03:00:02] INFO  Fetching https://www.spiegel.de ...
+[2026-09-14 03:00:04] INFO  Parsed 128 headlines
+[2026-09-14 03:00:04] INFO  Wrote spiegelHeadlines/2026-09-14.csv (128 rows)
+[2026-09-14 03:00:04] INFO  Job finished successfully
+[2026-09-15 03:00:01] INFO  Starting daily scraper job (spiegel_scraper.R)
+[2026-09-15 03:00:31] ERROR Fetching https://www.spiegel.de ... HTTP 429 Too Many Requests
+[2026-09-15 03:00:31] ERROR in curl::curl_fetch_memory: Timeout was reached
+[2026-09-15 03:00:31] WARN  0 headlines parsed
+[2026-09-15 03:00:31] ERROR Execution halted

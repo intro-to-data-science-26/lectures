@@ -5,7 +5,10 @@ author: "Simon Munzert"
 institute: "Hertie School | [GRAD-C11/E1339](https://github.com/intro-to-data-science-26)" #"`r format(Sys.time(), '%d %B %Y')`"
 output:
   xaringan::moon_reader:
-    css: [default, 'simons-touch.css', metropolis, metropolis-fonts] 
+    includes:
+      after_body: "../add_hertie_logo.html"
+      in_header: "../my_header.html"
+    css: [default,'../simons-touch.css', metropolis, metropolis-fonts] 
     lib_dir: libs
     nature:
       highlightStyle: github
@@ -71,7 +74,7 @@ library(kableExtra)
 
 8. [Scripting](#scripting)
 
-9. [Next steps](#steps)
+9. [The shell in the age of AI agents](#agents)
 
 .footnote[<sup>1</sup> Much of this lecture draws on materials from Grant McDermott's excellent [*Data Science for Economists*](https://github.com/uo-ec607/lectures) class.]
 
@@ -187,7 +190,7 @@ name: intro
 ### Shell variants
 
 - It is important to note that there are many different shell programs, and they [differ in terms of functionality](https://en.wikipedia.org/wiki/Comparison_of_command_shells).
-- On most Unix-like systems, the default shell is a program called [**bash**](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), which stands for "Bourne Again Shell".
+- On most Unix-like systems, the default shell is a program called [**bash**](https://en.wikipedia.org/wiki/Bash_%28Unix_shell%29), which stands for "Bourne Again Shell".
 - Other examples are the  [Z Shell](https://en.wikipedia.org/wiki/Z_shell) (or zsh; default on MacOS)<sup>1</sup>, [Windows Command Prompt](https://en.wikipedia.org/wiki/Cmd.exe) (cmd.exe, the default CLI on MS Windows), [Windows PowerShell](https://en.wikipedia.org/wiki/PowerShell), [C Shell](https://en.wikipedia.org/wiki/C_shell), and many more.
 - When a terminal opens, it will immediately start the user's preferred shell program. (This can be [changed](https://effective-shell.com/docs/getting-started/).)
 
@@ -260,17 +263,19 @@ name: intro
 
 # Why bother with the shell? (cont.)
 
-1. **Speed.** Typing is fast: A skilled shell user can manipulate a system at dazzling speeds just using a keyboard. Typing commands is generally much faster than exploring through user interfaces with a mouse.
+1. **Speed.** Typing is fast: A skilled shell user can manipulate a system at dazzling speeds just using a keyboard.
 
-2. **Power.** Both for executing commands and for fixing problems. There are some things you just can't do in an IDE or GUI. It also avoids memory complications associated with certain applications and/or IDEs. 
+2. **Power.** Both for executing commands and for fixing problems. There are some things you just can't do in an IDE or GUI.
 
 3. **Reproducibility.** Scripting is reproducible, while clicking is not.
 
-4. **Portability.** A shell can be used to interface to almost any type of computer, from a mainframe to a Raspberry Pi, in a very similar way. The shell is often the only game in town for high performance computing (interacting with servers and super computers). 
+4. **Portability.** A shell can be used to interface to almost any type of computer, from a mainframe to a Raspberry Pi, in a very similar way — and it is often the only game in town for high performance computing.
 
 5. **Automation.** Shells are programmable: Working in the shell allows you to program workflows, that is create scripts to automate time-consuming or repetitive processes.
 
-6. **Become a marketable data scientist.** Modern programming is often polyglot. The shell provides a common interface for tooling. Modern solutions are often built to run in containers on Linux. In this environment shell knowledge has become very valuable. In short, [the shell is having a renaissance](https://effective-shell.com/docs/part-1-transitioning-to-the-shell/the-renaissance-of-the-shell/) in the age of data science.
+6. **Become a marketable data scientist.** Modern programming is often polyglot, and modern solutions are often built to run in containers on Linux. The shell provides the common interface for all this tooling. In short, [the shell is having a renaissance](https://effective-shell.com/docs/part-1-transitioning-to-the-shell/the-renaissance-of-the-shell/) in the age of data science.
+
+7. **Work with AI agents.** Coding agents like [Claude Code](https://claude.com/claude-code), [Codex CLI](https://developers.openai.com/codex/cli/), or [Gemini CLI](https://github.com/google-gemini/gemini-cli) act on your machine through shell commands — to supervise them, you must be able to read them. More on this [later](#agents).
 
 
 
@@ -289,7 +294,7 @@ By pairing and chaining well-designed individual components, we can build powerf
 
 You can see why the Unix philosophy is also referred to as "minimalist and modular".
   
-Again, this philosophy is very clearly expressed in the design and functionality of the Unix shell.
+This 50 year-old design principle has aged remarkably well: Small, composable, text-based tools with predictable inputs and outputs turn out to be the ideal action space for LLM-based agents, which are good at text in, text out operations.
 
 
 ---
@@ -313,6 +318,8 @@ Again, this philosophy is very clearly expressed in the design and functionality
 - Connecting to cloud environments
 
 - Running analyses ("jobs") on super computers
+
+- Working with AI coding agents
 
 - etc.
 
@@ -583,6 +590,40 @@ All Bash commands have the same basic syntax:
 ]
 
 
+---
+# Exit codes and command chaining
+
+Every command reports back whether it succeeded: When it finishes, it returns an **exit code** — `0` means success, anything else means failure. The special variable `$?` stores the exit code of the last command.
+
+.pull-left[
+```{bash exitcode1}
+ls examples/hello.sh
+echo $? ## 0 = success
+```
+]
+
+.pull-right[
+```{bash exitcode2}
+ls examples/no-such-file.txt 2> /dev/null
+echo $? ## non-zero = failure
+```
+]
+
+--
+
+Exit codes power the **conditional chaining operators**: `command1 && command2` runs `command2` only if `command1` *succeeded*; `command1 || command2` runs `command2` only if `command1` *failed*.
+
+```{bash chaining}
+mkdir -p examples/tmp && echo "Folder exists, safe to continue."
+ls examples/no-such-file.txt 2> /dev/null || echo "Fallback: file not found."
+```
+
+```{bash, echo = FALSE}
+rm -rf examples/tmp
+```
+
+Why care? Because all-or-nothing chains like `cd project && git pull && Rscript analysis.R` are everywhere — not least in the commands that AI coding agents propose to run on your machine. Be able to read them before you hit "approve".
+
 
 
 <!-- ############################################ -->
@@ -602,12 +643,9 @@ name: help
 
 - The `man` tool can be used to look at the manual page for a topic.
 - The `man` pages are grouped into sections, we can see them with `man man`.
-- The `tldr` tool shows a very short description of a tool, which covers the most common use cases only.
-- The `cht.sh` website can be used directly from the shell to get help on tools or even ask specific questions. (Or install `cheat`.)
-
-
-- For more info on how to get help, see [here](https://effective-shell.com/docs/part-1-transitioning-to-the-shell/getting-help/).
-- Actually, typing `man bash` and reading/skimming the whole thing might be a good start to learn basic command line speak. 
+- The [`tldr`](https://tldr.sh/) tool shows a very short description of a tool, which covers the most common use cases only. Similar tools/services: [`cheat`](https://github.com/cheat/cheat) and [`cheat.sh`](https://cheat.sh/).
+- And, of course, **asking an AI assistant** has become the default way to get help. That's fine — but make it a habit to read and understand a command before you run it (more on this [later](#agents)).
+- Actually, typing `man bash` and reading/skimming the whole thing might be a good start to learn basic command line speak.
 ]
 
 .pull-right[
@@ -624,8 +662,10 @@ name: help
 The `man` command ("manual pages") is your friend if you ever need help.
 
 ```{bash}
-man ls
+man ls | col -b
 ```
+
+.footnote[The `| col -b` part is only needed here to capture the output cleanly for these slides — `man` marks bold text with old-school overstrikes (character + backspace + character), which `col -b` strips. In an interactive terminal, just type `man ls` and enjoy proper formatting.]
 
 ---
 
@@ -652,39 +692,6 @@ These and other `man` tricks are detailed in the help pages (hit "h" when you're
 <b>RTFM</b>
 </div>
 ]
-
-
----
-
-# Help: cheat, tldr, cheat.sh
-
-There are various other utilities which provide more readable summaries/cheatsheets of various commands. Those include
-
-- [`cheat`](https://github.com/cheat/cheat)
-- [`cheat.sh`](https://cheat.sh/)
-- [`tldr`](https://tldr.sh/)
-
-
-The first two need to be installed first. `cheat.sh` sheets are accessible via:
-
-```{bash, eval = FALSE}
-curl cheat.sh/ls  
-```
-
-```
-# List files one per line:
-ls -1
-
-# List all files, including hidden files:
-ls -a
-
-# List all files, with trailing `/` added to directory names:
-ls -F
-
-# Long format list with size displayed using human readable units (KB, MB, GB):
-ls -lh
-```
-
 
 
 <!-- ############################################ -->
@@ -797,7 +804,7 @@ ls -lh examples
 What does this all mean? Let's focus on the top line.
 
 ```bash
-drwxrwxr-x@ 3 simonmunzert staff 96B Nov 9 23:20 ABC
+drwxr-xr-x@ 3 s.munzert staff 96B Sep 20 13:42 ABC
 ```
 
 ---
@@ -808,7 +815,7 @@ count:false
 What does this all mean? Let's focus on the top line.
 
 <p span style="font-family:Fira Code; font-size:80%; color: #333; background: #f8f8f8; padding: 0.5em;";>
-<span style='background: #ffff88;'>d</span>rwxrwxr-x@ 3 simonmunzert staff 96B Nov 9 23:20 ABC</span>
+<span style='background: #ffff88;'>d</span>rwxr-xr-x@ 3 s.munzert staff 96B Sep 20 13:42 ABC</span>
 
 - The first column denotes the object type:
   - `d` (directory or folder), `l` (link), or `-` (file)
@@ -820,7 +827,7 @@ count:false
 
 What does this all mean? Let's focus on the top line.
 
-<p span style="font-family:Fira Code; font-size:80%; color: #333; background: #f8f8f8; padding: 0.5em;";>d<span style='background: #ffff88;'><span style='color: #e41a1c;'>rwx</span><span style='color: #377eb8;'>rwx</span><span style='color: #4daf4a;'>r-x</span></span>@ 3 simonmunzert staff 96B Nov 9 23:20 ABC</span>
+<p span style="font-family:Fira Code; font-size:80%; color: #333; background: #f8f8f8; padding: 0.5em;";>d<span style='background: #ffff88;'><span style='color: #e41a1c;'>rwx</span><span style='color: #377eb8;'>r-x</span><span style='color: #4daf4a;'>r-x</span></span>@ 3 s.munzert staff 96B Sep 20 13:42 ABC</span>
 
 - <span style='color: #A9A9A9;'>The first column denotes the object type:
   - `d` (directory or folder), `l` (link), or `-` (file)</span>
@@ -835,7 +842,7 @@ count:false
 
 What does this all mean? Let's focus on the top line.
 
-<p span style="font-family:Fira Code; font-size:80%; color: #333; background: #f8f8f8; padding: 0.5em;";>drwxrwxr-x@ <span style='background: #ffff88;'>3</span> simonmunzert staff 96B Nov 9 23:20 ABC</span>
+<p span style="font-family:Fira Code; font-size:80%; color: #333; background: #f8f8f8; padding: 0.5em;";>drwxr-xr-x@ <span style='background: #ffff88;'>3</span> s.munzert staff 96B Sep 20 13:42 ABC</span>
 
 - <span style='color: #A9A9A9;'>The first column denotes the object type:
   - `d` (directory or folder), `l` (link), or `-` (file)</span>
@@ -851,7 +858,7 @@ count:false
 
 What does this all mean? Let's focus on the top line.
 
-<p span style="font-family:Fira Code; font-size:80%; color: #333; background: #f8f8f8; padding: 0.5em;";>drwxrwxr-x@ 3 <span style='background: #ffff88;'><span style='color: #e41a1c;'>simonmunzert</span> <span style='color: #377eb8;'>staff</span></span> 96B Nov 9 23:20 ABC</span>
+<p span style="font-family:Fira Code; font-size:80%; color: #333; background: #f8f8f8; padding: 0.5em;";>drwxr-xr-x@ 3 <span style='background: #ffff88;'><span style='color: #e41a1c;'>s.munzert</span> <span style='color: #377eb8;'>staff</span></span> 96B Sep 20 13:42 ABC</span>
 
 - <span style='color: #A9A9A9;'>The first column denotes the object type:
   - `d` (directory or folder), `l` (link), or `-` (file)</span>
@@ -868,7 +875,7 @@ count:false
 
 What does this all mean? Let's focus on the top line.
 
-<p span style="font-family:Fira Code; font-size:80%; color: #333; background: #f8f8f8; padding: 0.5em;";>drwxrwxr-x@ 3 simonmunzert staff <span style='background: #ffff88;'>96B Nov 9 23:20 ABC</span></span>
+<p span style="font-family:Fira Code; font-size:80%; color: #333; background: #f8f8f8; padding: 0.5em;";>drwxr-xr-x@ 3 s.munzert staff <span style='background: #ffff88;'>96B Sep 20 13:42 ABC</span></span>
 
 - <span style='color: #A9A9A9;'>The first column denotes the object type:
   - `d` (directory or folder), `l` (link), or `-` (file)</span>
@@ -972,8 +979,13 @@ rm testing/test1.txt
 --
 
 The equivalent command for directories is `rmdir`.
-```{bash rmdir, error=T}
+```{bash rmdir, eval = FALSE}
 rmdir testing
+```
+```{bash rmdir_run, echo = FALSE}
+## run the failing command for real, but swallow the non-zero exit status
+## so knitr does not emit a warning at the end of the render
+rmdir testing 2>&1 || true
 ```
 
 --
@@ -1044,63 +1056,6 @@ ls examples/copies
 
 ---
 
-# Rename _en masse_: zmv
-
-A more convenient way to do renaming in `zsh` is with `zmv`. It has to be installed and autoloaded first:
-
-```{bash, eval = FALSE}
-autoload -U zmv
-```
-
-The syntax is `zmv <options> <old-files-pattern> <new-files-pattern>`
-
-For example, say we want to change the file type (i.e. extension) of a set of files in the `examples/meals` directory, we do: 
-
-```{bash, eval = FALSE}
-cd examples/meals
-zmv -n -W  "*.csv" "*.txt"
-```
-
-```bash
-mv -- friday.csv friday.txt
-mv -- monday.csv monday.txt
-mv -- saturday.csv saturday.txt
-mv -- sunday.csv sunday.txt
-mv -- thursday.csv thursday.txt
-mv -- tuesday.csv tuesday.txt
-mv -- wednesday.csv wednesday.txt
-```
-
-A very useful flag is `-n` which does not execute the command but prints the command that would be executed. Use this if you are unsure about your patterns. The `-W` flag ensures that the wildcard `*` is recycled in the second pattern.
-
----
-
-# Rename _en masse_: zmv (cont.)
-
-`zmv` really shines in conjunction with regular expressions and wildcards (more on the next slide). This works especially well for dealing with a whole list of files or folders.
-
-As another example, let's change _all_ of the file names in the `examples/meals` directory.
-
-```{bash, eval = FALSE}
-zmv -n '(**/)(*).csv' '$1$2-sucks.csv'
-```
-
-```bash
-mv -- friday.csv friday-sucks.csv
-mv -- monday.csv monday-sucks.csv
-mv -- saturday.csv saturday-sucks.csv
-mv -- sunday.csv sunday-sucks.csv
-mv -- thursday.csv thursday-sucks.csv
-mv -- tuesday.csv tuesday-sucks.csv
-mv -- wednesday.csv wednesday-sucks.csv
-```
-
-Notice that the patterns are now bit more complicated. The first is surrounded by single quotes, `(**/)` which defines a group that we can refer to later. It allows us to search in both the given directory and sub-directories (which we don't have in this case). The second, `(*)` is also grouped. Both are referred to in the replacement pattern with `$1` and `$2`.
-
-Want to learn more about `zmv`? Check out [this](https://filipe.kiss.ink/zmv-zsh-rename/).
-
----
-
 # Wildcards
 
 [Wildcards](http://tldp.org/LDP/GNU-Linux-Tools-Summary/html/x11655.htm) are special characters that can be used as a replacement for other characters. The two most important ones are:
@@ -1155,7 +1110,7 @@ find . -size +2000k ## find files larger than 2000 KB
 - The `cp` (copy) command can copy a file.
 - The `cp` can also be given wildcards like `*` to copy many files.
 - The `mv` (move) command can move or rename a file.
-- The `zmv` command enables convenient renaming.
+- Renaming _en masse_ (e.g. with wildcards or zsh's `zmv`) is a classic task to delegate to an AI assistant — but read the `mv` commands it proposes before you approve them.
 - The `mkdir` command can create a folder - it can even create a whole tree of folders if you pass the `-p` (create parent directories) flag.
 - The `find` command lets you find files based on specified criteria.
 - The `cat` command (concatenated) can be used to write the contents of a file to the screen.
@@ -1327,7 +1282,7 @@ There are two main commands for manipulating text in the shell, namely `sed` and
 --
 
 .pull-left[
-**Example 1.** Replace one text pattern with another.
+**Example:** Replace one text pattern with another.
 
 ```{bash nursery}
 cat examples/nursery.txt
@@ -1354,20 +1309,7 @@ Let's look at the expression `s/Jack/Bill/g` in detail:
 
 ]
 
----
-# Manipulate text: sed (cont.)
-
-**Example 2.** Find and count the 10 most commonly used words in Shakespeare's Sonnets.
-
-The command below uses, among other things:
-
-- `\s`, the whitespace metacharacter
-- `\n`, the newline metacharacter
-- `|`, the pipe operator (more on that later)
-
-```{bash sed2}
-sed 's/\s/\n/g' examples/sonnets.txt | sort | uniq -c | sort -nr | head -10
-```
+`sed` and `awk` one-liners are famously arcane — exactly the kind of thing you'd nowadays ask an AI assistant to write for you. Your job is to understand what a substitution *does* and to sanity-check the pattern before running it.
 
 ---
 
@@ -1396,11 +1338,10 @@ For a more detailed overview, see [here](https://effective-shell.com/docs/part-3
 .pull-left[
 <br><br>
 **Good starting points are:**
-- [This chapter](https://effective-shell.com/docs/part-3-manipulating-text/regex-essentials/) discussing regex in the context of the shell
 - [This base R regex intro](https://stat.ethz.ch/R-manual/R-devel/library/base/html/regex.html)
 - [This intro from R4DS](https://r4ds.had.co.nz/strings.html)
 - [This vignette from the stringr package](https://cran.r-project.org/web/packages/stringr/vignettes/regular-expressions.html)
-- And, of course, the great presentations on the topic featured [in our I2DS Tools for Data Science Workshop](https://intro-to-data-science-21-workshop.github.io/)!
+- And, of course, the class (or, more likely, the labs) next week!
 ]
 
 .pull-right[
@@ -1592,49 +1533,32 @@ Can you think of a way? (_Hint:_ `tail` and `head`...)
 
 # Example 2: Combine CSVs (cont.)
 
-Let's try again. First delete the old file so we can start afresh.
-```{bash for2c}
-rm -f examples/meals/mealplan.csv ## delete old file
-```
-
---
-
-Here's our adapted gameplan:
-- First, create the new file by grabbing the header (i.e. top line) from any of the input files and redirecting it. No need for `touch` this time.
+Let's try again. Here's our adapted gameplan:
+- First, delete the old file. Then, create the new file by grabbing the header (i.e. top line) from any of the input files and redirecting it. No need for `touch` this time.
 - Next, loop over all the input files as before, but this time only append everything _after_ the top line.
 
 ```{bash for2d, echo = FALSE}
+rm -f examples/meals/mealplan.csv
 head -1 examples/meals/monday.csv > examples/meals/mealplan.csv
 for i in $(ls examples/meals/*day.csv)
-do 
+do
   tail -n +2 $i >> examples/meals/mealplan.csv
 done
 ```
 ```bash
+$ rm -f examples/meals/mealplan.csv ## delete old file
 ## create a new CSV by redirecting the top line of any file
 $ head -1 examples/meals/monday.csv > examples/meals/mealplan.csv
 ## loop over the input files, appending everything after the top line
 $ for i in $(ls examples/meals/*day.csv)
-> do 
+> do
 >   tail -n +2 $i >> examples/meals/mealplan.csv
 > done
 ```
 
----
-
-# Example 2: Combine CSVs (cont.)
-
-It worked!
-
-```{bash for2e}
-cat examples/meals/mealplan.csv
-```
-
 --
 
-We still have to sort the correct week order, but that's an easy job in R.
-- The explicit benefit of doing the concatenating in the shell is that it can be _much_ more efficient, since all the files don't simultaneously have to be held in memory (i.e RAM). 
-- This doesn't matter here, but can make a dramatic difference once we start working with lots of files (or even a few really big ones).
+It worked! (Check the output with `cat examples/meals/mealplan.csv`.) Why do this in the shell rather than in R? Efficiency: the files never have to be held in memory (i.e. RAM) simultaneously. This doesn't matter here, but makes a dramatic difference with lots of files (or a few really big ones).
 
 ```{bash for2f, echo = FALSE}
 rm -f examples/meals/mealplan.csv ## Silently remove to avoid errors with later re-knits
@@ -1688,7 +1612,7 @@ echo "\nHello World!\n"
 
 ```
 
-- `#!/bin/sh` is a [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)), indicating which program to run the command with (here: any Bash-compatible shell). However, it is typically ignored (note that it begins with the hash comment character.)
+- `#!/bin/sh` is a [shebang](https://en.wikipedia.org/wiki/Shebang_%28Unix%29), indicating which program to run the command with (here: any Bash-compatible shell). However, it is typically ignored (note that it begins with the hash comment character.)
 
 ---
 count: false
@@ -1701,7 +1625,7 @@ count: false
 
 ```
 
-- `#!/bin/sh` is a [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)), indicating which program to run the command with (here: any Bash-compatible shell). However, it is typically ignored (note that it begins with the hash comment character.)
+- `#!/bin/sh` is a [shebang](https://en.wikipedia.org/wiki/Shebang_%28Unix%29), indicating which program to run the command with (here: any Bash-compatible shell). However, it is typically ignored (note that it begins with the hash comment character.)
 - `echo "\nHello World!\n"` is the actual command that we want to run.
 
 ---
@@ -1715,7 +1639,7 @@ echo "\nHello World!\n"
 
 ```
 
-- `#!/bin/sh` is a [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)), indicating which program to run the command with (here: any Bash-compatible shell). However, it is typically ignored (note that it begins with the hash comment character.)
+- `#!/bin/sh` is a [shebang](https://en.wikipedia.org/wiki/Shebang_%28Unix%29), indicating which program to run the command with (here: any Bash-compatible shell). However, it is typically ignored (note that it begins with the hash comment character.)
 - `echo "\nHello World!\n"` is the actual command that we want to run.
 
 To run this simple script, you can just type in the file name and press enter.
@@ -1740,35 +1664,12 @@ Rscript -e "cat('Hello World, from R!')"
 
 --
 
-Of course, the more typical `Rscript` use case is to execute full length R scripts. An optional, but very useful feature here is the ability to pass extra arguments from the shell to your R script. Consider the `hello.R` script in the examples folder:
-
-```{bash rscript_hello_cat}
-cat examples/hello.R
-```
-
----
-
-# Rscript (cont.)
-
-The key step for using additional `Rscript` arguments is held within the top two lines.
-
-```r
-args = commandArgs(trailingOnly = TRUE)
-i = args[1]; j = args[2]
-```
-These tell `Rscript` to capture any trailing arguments (i.e. after the file name) and then pass them on as objects that can be used within R. 
-
---
-
-Let's run the script to see it in action.
+Of course, the more typical `Rscript` use case is to execute full length R scripts.
 
 ```{bash rscript_hello}
-Rscript examples/hello.R 12 9
+Rscript examples/hello.R
 ```
 
---
-
-Again, including trailing arguments is entirely optional. You could run `Rscript myfile.R` without any problems. But it often proves very useful for the type of work that you'd likely be using `Rscript` for (e.g. batching big jobs).
 
 ---
 
@@ -1796,10 +1697,123 @@ With `nano`, open the script by typing `$ nano examples/hello.sh`.
 <!-- ############################################ -->
 ---
 class: inverse, center, middle
-name: steps
+name: agents
 
-# Next steps
+# The shell in the age of AI agents
 <html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
+
+
+---
+# AI agents live in the shell
+
+.pull-left[
+- The most capable AI coding agents — [Claude Code](https://claude.com/claude-code), [Codex CLI](https://developers.openai.com/codex/cli/), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [aider](https://aider.chat/) — are terminal applications.
+
+- More importantly, they **act through the shell**: they list files, `grep` through code, run `git`, install packages, and execute scripts — with the same commands you learned today.
+
+- Before running a consequential command, an agent shows it to you and asks for permission. **Reading shell has become a supervision skill.**
+
+- Agents will also happily *write* shell commands for you. For you, that means producing clever one-liners matters less; reading commands, understanding the environment they run in, and cleaning up when something goes wrong matters more.
+]
+
+.pull-right[
+## Before you hit "approve", ask yourself:
+
+1. What does the command touch? Watch out for paths and wildcards (`rm -rf *` in the wrong directory is a catastrophe).
+
+2. Is it destructive or irreversible? `rm` deletes forever, `mv` can overwrite, `>` truncates a file.
+
+3. Where will it run? An agent's working directory may not be where you think it is.
+
+4. What does it install or download, and from where? Do you trust the source?
+
+If you can't answer these, don't approve — ask the agent to explain first. (It's good at that, too.)
+]
+
+
+---
+# Your environment: variables
+
+Programs you start inherit **environment variables** — named settings that live in your shell session. Some are set for you:
+
+```{bash envvars1}
+echo $HOME
+echo $SHELL
+```
+
+Set your own with `export`:
+
+```{bash envvars2, eval = FALSE}
+export ANTHROPIC_API_KEY="sk-ant-..." ## now every program started from this shell can read it
+```
+
+- By convention, names are in `UPPERCASE`. Inspect all currently set variables with `printenv`.
+- An `export`ed variable lasts only for the current session. To make it permanent, add the `export` line to your shell's configuration file (`~/.zshrc` for zsh, `~/.bashrc` for bash), which runs every time a new shell starts.
+- **Why this matters now:** Environment variables are *the* standard way to configure command-line tools — including AI agents, which read their API keys from variables like `ANTHROPIC_API_KEY`. Never hardcode keys in scripts you share!
+
+
+---
+# Your environment: the PATH
+
+How does the shell know what `ls` or `Rscript` *is*? It searches the directories listed in the `PATH` variable, in order, for an executable with that name.
+
+```{bash path1}
+echo $PATH | tr ':' '\n' | head -4 ## one directory per line (note the pipes!)
+```
+
+`which` tells you *where* a command was found:
+
+```{bash path2}
+which R
+```
+
+- The infamous `command not found` error simply means: no executable with that name was found in any `PATH` directory. The fix is usually to install the tool — or to add its directory to `PATH` in your `~/.zshrc`.
+- When you install a CLI tool — say, `npm install -g @anthropic-ai/claude-code` — the installer drops an executable into a `PATH` directory. That's the whole magic behind a new command "existing".
+
+
+---
+# Processes: what is my computer doing?
+
+Every running program is a **process** with a unique process ID (PID).
+
+```{bash ps1, eval = FALSE}
+ps ## show the processes running in this shell session
+```
+
+```
+  PID TTY           TIME CMD
+81321 ttys005    0:00.13 -zsh
+84102 ttys005    0:04.71 Rscript analysis.R
+```
+
+- `ps -e` shows *all* processes on the machine; `top` (or the friendlier [`htop`](https://htop.dev/)) shows them live, ordered by resource use.
+- Stop the process running in the foreground with `Ctrl`+`C`.
+- Stop any process with `kill <PID>` (or, as a last resort, `kill -9 <PID>`).
+- Append `&` to run a command in the **background** and keep working: `Rscript slow-job.R &`.
+
+**Why this matters now:** AI agents love to start web servers and long-running jobs. When your agent leaves a runaway process behind (or your laptop fan takes off), `ps`, `top`, and `kill` are the rescue squad.
+
+
+---
+# The Unix philosophy, vindicated
+
+Remember: *Do one thing and do it well* — small tools connected by text streams. This 50-year-old design is a perfect match for LLMs, which are also text in, text out. Your new AI tools compose with the old Unix ones:
+
+```{bash claude1, eval = FALSE}
+cat examples/error.log | claude -p "In one sentence: what went wrong in this log?"
+```
+
+```
+The scraper job failed on Sept 15 because spiegel.de rate-limited the request
+(HTTP 429), so no headlines were parsed and the script halted.
+```
+
+```{bash claude2, eval = FALSE}
+git diff | claude -p "Write a one-line commit message for these changes."
+```
+
+- Used this way, the LLM is just another command-line tool: it reads from a pipe and writes to standard output. So you can put it *in the middle* of a pipeline, redirect its output to a file, or call it in a loop.
+- The skill that ties it all together is the one you learned today: knowing what the individual pieces do, and how to plug them together.
 
 
 ---
@@ -1811,7 +1825,7 @@ We covered a _lot_ of ground today. I hope that I've given you a sense of how th
 My main goal has been to "demystify" the shell, so that you aren't intimidated when we use shell commands later on.
 
 At the same time, there's loads that we didn't cover.
-- User roles and file permissions, environment variables, SSH, memory management (e.g. [top](https://ss64.com/bash/top.html) and [htop](https://hisham.hm/htop/)), GNU parallel, etc.
+- User roles and file permissions, SSH, job scheduling with cron, GNU parallel, etc.
 - Automation; see [here](https://stat545.com/automation-overview.html), [here](https://books.ropensci.org/drake/index.html), and [here](https://web.stanford.edu/~gentzkow/research/CodeAndData.pdf) are great places to start learning about automation on your own.
 
 If you want to dig deeper, check out
@@ -1820,23 +1834,7 @@ If you want to dig deeper, check out
 - [The Unix Workbench](https://seankross.com/the-unix-workbench/) (Sean Kross)
 - [Data Science at the Command Line](https://www.datascienceatthecommandline.com/) (Jeroen Janssens)
 - [Effective Shell](https://effective-shell.com/) (Dave Kerr)
-- [Using AWK and R to parse 25tb](https://livefreeordichotomize.com/2019/06/04/using_awk_and_r_to_parse_25tb/) (Nick Strayer)
-
-
-
----
-# Next steps
-
-<br>
-
-### Assignment
-
-No further assignment! Be sure to hand in assignments 4 and 5 until the updated deadlines.
-
-### Next lecture
-
-Back to R. Become an even more efficient R programmer with **Debugging, automation, packaging**.
-
+- [Using AWK and R to parse 25tb](https://livefreeordichotomize.com/posts/2019-06-04-using-awk-and-r-to-parse-25tb/index.html) (Nick Strayer)
 
 
 
