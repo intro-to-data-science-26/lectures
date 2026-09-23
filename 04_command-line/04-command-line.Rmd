@@ -149,8 +149,8 @@ name: intro
 .pull-right-center[
 <div align="center">
 <img src="pics/diagram3-terminal-and-shell.png" width="500"/>
-<img src="pics/teletype-model-33.jpeg" width="100"/>
-<img src="pics/IBM_3486_terminal.jpeg" width="200"/>
+<img src="pics/teletype-model-33.jpeg" width="80"/>
+<img src="pics/IBM_3486_terminal.jpeg" width="160"/>
 </div>
 `Credit` [Dave Kerr](https://effective-shell.com/docs/part-2-core-skills/what-is-a-shell/)/[Rama/Musée Bolo](https://en.wikipedia.org/wiki/Teletype_Model_33#/media/File:Teletype-IMG_7287.jpg)/[ClickRick](https://de.m.wikipedia.org/wiki/Datei:IBM_3486_terminal.jpg)
 ]
@@ -191,7 +191,7 @@ name: intro
 
 - It is important to note that there are many different shell programs, and they [differ in terms of functionality](https://en.wikipedia.org/wiki/Comparison_of_command_shells).
 - On most Unix-like systems, the default shell is a program called [**bash**](https://en.wikipedia.org/wiki/Bash_%28Unix_shell%29), which stands for "Bourne Again Shell".
-- Other examples are the  [Z Shell](https://en.wikipedia.org/wiki/Z_shell) (or zsh; default on MacOS)<sup>1</sup>, [Windows Command Prompt](https://en.wikipedia.org/wiki/Cmd.exe) (cmd.exe, the default CLI on MS Windows), [Windows PowerShell](https://en.wikipedia.org/wiki/PowerShell), [C Shell](https://en.wikipedia.org/wiki/C_shell), and many more.
+- Other examples are the  [Z Shell](https://en.wikipedia.org/wiki/Z_shell) (or zsh; default on MacOS)<sup>1</sup>, [PowerShell](https://en.wikipedia.org/wiki/PowerShell) (the default shell on modern Windows), the legacy [Windows Command Prompt](https://en.wikipedia.org/wiki/Cmd.exe) (cmd.exe), [C Shell](https://en.wikipedia.org/wiki/C_shell), and many more.
 - When a terminal opens, it will immediately start the user's preferred shell program. (This can be [changed](https://effective-shell.com/docs/getting-started/).)
 
 .footnote[<sup>1</sup>That's what I use, which is why the shell on the following slides might look a bit different. Also, some commands/programs might or might not be available (or need to be installed).]
@@ -271,9 +271,9 @@ name: intro
 
 4. **Portability.** A shell can be used to interface to almost any type of computer, from a mainframe to a Raspberry Pi, in a very similar way — and it is often the only game in town for high performance computing.
 
-5. **Automation.** Shells are programmable: Working in the shell allows you to program workflows, that is create scripts to automate time-consuming or repetitive processes.
+5. **Automation/Scripting.** Shells are programmable: Working in the shell allows you to program workflows, that is create scripts to automate time-consuming or repetitive processes.
 
-6. **Become a marketable data scientist.** Modern programming is often polyglot, and modern solutions are often built to run in containers on Linux. The shell provides the common interface for all this tooling. In short, [the shell is having a renaissance](https://effective-shell.com/docs/part-1-transitioning-to-the-shell/the-renaissance-of-the-shell/) in the age of data science.
+6. **Become a marketable data scientist.** Modern programming is often polyglot, and modern solutions are often built to run in containers on Linux. The shell provides the common interface for all this tooling. In short, [the shell is having a renaissance](https://effective-shell.com/appendices/perspectives/) in the age of data science.
 
 7. **Work with AI agents.** Coding agents like [Claude Code](https://claude.com/claude-code), [Codex CLI](https://developers.openai.com/codex/cli/), or [Gemini CLI](https://github.com/google-gemini/gemini-cli) act on your machine through shell commands — to supervise them, you must be able to read them. More on this [later](#agents).
 
@@ -356,7 +356,7 @@ echo $SHELL
 Of course, it's always possible to open up the Shell directly if you prefer.
 - [Linux](https://www.wikihow.com/Open-a-Terminal-Window-in-Ubuntu)
 - [Mac](https://www.techwalla.com/articles/how-to-open-terminal-on-a-macbook)
-- [Windows](https://www.howtogeek.com/265900/everything-you-can-do-with-windows-10s-new-bash-shell/)
+- Windows: use [Git Bash](https://gitforwindows.org/) (installed together with Git) or a full Linux environment via [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) — the built-in PowerShell/cmd.exe won't understand most of the commands we cover today
 
 
 
@@ -456,23 +456,20 @@ This is shell-speak for: "Who am I and where am I?"
 
 # Useful keyboard shortcuts
 
-- `Tab` completion.
+| What you want to do | macOS | Windows (Git Bash) / Linux |
+|:--|:--|:--|
+| Autocomplete commands and paths | `Tab` | `Tab` |
+| Scroll through previous commands | `↑` / `↓` | `↑` / `↓` |
+| Search your command history | `Ctrl`+`r`, then type | `Ctrl`+`r`, then type |
+| Jump to beginning / end of line | `Ctrl`+`a` / `Ctrl`+`e` | `Ctrl`+`a` / `Ctrl`+`e` |
+| Jump back / forward one word | `⌥`+`←` / `⌥`+`→` | `Ctrl`+`←` / `Ctrl`+`→` |
+| Delete everything left / right of cursor | `Ctrl`+`u` / `Ctrl`+`k` | `Ctrl`+`u` / `Ctrl`+`k` |
+| Delete the word before the cursor | `Ctrl`+`w` | `Ctrl`+`w` |
+| Copy / paste | `⌘`+`c` / `⌘`+`v` | `Ctrl`+`Shift`+`c` / `Ctrl`+`Shift`+`v` |
+| Clear the screen | `Ctrl`+`l` | `Ctrl`+`l` |
+| Abort the running command | `Ctrl`+`c` | `Ctrl`+`c` |
 
-- Use the `↑` (and `↓`) keys to scroll through previous commands.
-
-- `Ctrl`+`→` (and `Ctrl`+`←`) to skip whole words at a time.
-
-- `Ctrl`+`a` moves the cursor to the beginning of the line.
-
-- `Ctrl`+`e` moves the cursor to the end of the line.
-
-- `Ctrl`+`k` deletes everything to the right of the cursor.
-
-- `Ctrl`+`u` deletes everything to the left of the cursor.
-
-- `Ctrl`+`Shift`+`c` to copy and `Ctrl`+`Shift`+`v` to paste (or just `⌘`+ `c/v` on a Mac).
-
-- `Ctrl`+`l` clears your terminal.
+.footnote[When a shortcut "doesn't work", it is usually being intercepted by the OS or by the app hosting your terminal (e.g., RStudio).]
 
 
 ---
@@ -544,18 +541,19 @@ All Bash commands have the same basic syntax:
 .pull-right[
 **Options** (also called **Flags**)
 
-- Start with a dash.
-- Usually one letter.
+- Start with a dash, and are usually one letter.
 - Multiple options can be chained together under a single dash.
   ```bash
   $ ls -l -a -h /var/log ## This works
   $ ls -lah /var/log ## So does this
   ```
-- An exception is with (rarer) options requiring two dashes.
+- An exception is with (rarer) options requiring two dashes:
+
   ```bash
-  $ ls --group-directories-first --human-readable /var/log
+  $ sort --reverse --unique myfile.txt ## same as: sort -ru myfile.txt
   ```
 - Think it's difficult to memorize what the individual letters stand for? You're totally right.
+- Plus: *which* options exist depends on the program's flavor...
 ]
 
 
@@ -588,42 +586,6 @@ All Bash commands have the same basic syntax:
   $ mv pics/cat.JPG best-pics/cat.jpeg
   ```
 ]
-
-
----
-# Exit codes and command chaining
-
-Every command reports back whether it succeeded: When it finishes, it returns an **exit code** — `0` means success, anything else means failure. The special variable `$?` stores the exit code of the last command.
-
-.pull-left[
-```{bash exitcode1}
-ls examples/hello.sh
-echo $? ## 0 = success
-```
-]
-
-.pull-right[
-```{bash exitcode2}
-ls examples/no-such-file.txt 2> /dev/null
-echo $? ## non-zero = failure
-```
-]
-
---
-
-Exit codes power the **conditional chaining operators**: `command1 && command2` runs `command2` only if `command1` *succeeded*; `command1 || command2` runs `command2` only if `command1` *failed*.
-
-```{bash chaining}
-mkdir -p examples/tmp && echo "Folder exists, safe to continue."
-ls examples/no-such-file.txt 2> /dev/null || echo "Fallback: file not found."
-```
-
-```{bash, echo = FALSE}
-rm -rf examples/tmp
-```
-
-Why care? Because all-or-nothing chains like `cd project && git pull && Rscript analysis.R` are everywhere — not least in the commands that AI coding agents propose to run on your machine. Be able to read them before you hit "approve".
-
 
 
 <!-- ############################################ -->
@@ -661,11 +623,14 @@ name: help
 
 The `man` command ("manual pages") is your friend if you ever need help.
 
-```{bash}
+```{bash, eval = FALSE}
+man ls
+```
+
+```{bash, echo = FALSE}
 man ls | col -b
 ```
 
-.footnote[The `| col -b` part is only needed here to capture the output cleanly for these slides — `man` marks bold text with old-school overstrikes (character + backspace + character), which `col -b` strips. In an interactive terminal, just type `man ls` and enjoy proper formatting.]
 
 ---
 
@@ -906,7 +871,7 @@ What does this all mean? Let's focus on the top line.
 - The `tree` command can show the files and folders in a given directory. (Install first on a Mac.)
 - The `file` command can be used to ask the shell what it thinks a file is.
 
-For a more detailed overview, see [here](https://effective-shell.com/docs/part-1-transitioning-to-the-shell/navigating-your-system/).
+For a more detailed overview, see [here](https://effective-shell.com/appendices/shell-basics/?_highlight=navigating#navigating-your-filesystem/).
 
 
 <!-- ############################################ -->
@@ -1118,7 +1083,7 @@ find . -size +2000k ## find files larger than 2000 KB
 - The `wget` (web get) command can download a file from the web. (Install first on a Mac.)
 - The `zip`/`unzip` commands can zip/unzip a file/folder for us.
 
-For a more detailed overview, see [here](https://effective-shell.com/docs/part-1-transitioning-to-the-shell/managing-your-files/).
+For a more detailed overview, see [here](https://effective-shell.com/appendices/shell-basics/?_highlight=navigating#managing-your-files-and-folders).
 
 
 
@@ -1138,7 +1103,7 @@ name: text
 .pull-left[
 <br>
 - Data scientists spend a lot of time working with text, including scripts, Markdown documents, and delimited text files like CSVs. 
-- You will have the opportunity to learn more on the statistical analysis of text using NLP technique over the course of your studies.
+- You will have the opportunity to learn more on the statistical analysis of text using NLP over the course of your studies.
 - While Python and R are strong environments for text wrangling and analysis, it still makes sense to spend a few slides showing off some Bash shell capabilities for working with text files.
 - We'll only scratch the surface, but hopefully you'll get an idea of how powerful the shell is in the text domain.
 ]
@@ -1439,6 +1404,39 @@ cat -n examples/sonnets.txt | head -n100 | tail -n10
 
 
 ---
+# Exit codes and command chaining
+
+Every command reports back whether it succeeded: When it finishes, it returns an **exit code** — `0` means success, anything else means failure. The special variable `$?` stores the exit code of the last command.
+
+.pull-left[
+```{bash exitcode1}
+ls examples/hello.sh
+echo $? ## 0 = success
+```
+]
+
+.pull-right[
+```{bash exitcode2}
+ls examples/no-such-file.txt 2> /dev/null
+echo $? ## non-zero = failure
+```
+]
+
+Exit codes power the **conditional chaining operators**: `command1 && command2` runs `command2` only if `command1` *succeeded*; `command1 || command2` runs `command2` only if `command1` *failed*.
+
+```{bash chaining}
+mkdir -p examples/tmp && echo "Folder exists, safe to continue."
+ls examples/no-such-file.txt 2> /dev/null || echo "Fallback: file not found."
+```
+
+```{bash, echo = FALSE}
+rm -rf examples/tmp
+```
+
+Why care? Because all-or-nothing chains like `cd project && git pull && Rscript analysis.R` are everywhere — not least in the commands that AI coding agents propose to run on your machine. Be able to read them before you hit "approve".
+
+
+---
 # Iteration with _for_ loops
 
 Sometimes you want to loop an operation over certain parameters. _for_ loops in Bash/Z shell work similarly to other programming languages that you are probably familiar with. 
@@ -1677,7 +1675,7 @@ Rscript examples/hello.R
 
 Say you want to edit the `hello.sh` script. We have already seen how to append text lines to a file. But when it comes to more complicated editing work, you're better off using a command-line editor: 
 
-- An easy starting point is [**nano**](https://www.nano-editor.org/). (**Windows users**, see [here](https://stackoverflow.com/questions/36802996/bash-nano-command-not-found-at-windows-git-bash).)
+- An easy starting point is [**nano**](https://www.nano-editor.org/). (**Windows users**: recent versions of Git Bash ship with nano; if yours doesn't, see [here](https://stackoverflow.com/questions/36802996/bash-nano-command-not-found-at-windows-git-bash).)
 - Another popular (and nerdy) option is [**vim**](https://missing.csail.mit.edu/2020/editors/). Extremely powerful, but a steep learning curve (I am told).
 - More options [here](https://itsfoss.com/command-line-text-editors-linux/). 
 
@@ -1816,6 +1814,19 @@ git diff | claude -p "Write a one-line commit message for these changes."
 - The skill that ties it all together is the one you learned today: knowing what the individual pieces do, and how to plug them together.
 
 
+
+
+<!-- ############################################ -->
+---
+class: inverse, center, middle
+name: endofinput
+
+# Ctrl+d
+<html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
+
+
+
+
 ---
 
 # Things we didn't cover today
@@ -1830,11 +1841,34 @@ At the same time, there's loads that we didn't cover.
 
 If you want to dig deeper, check out
 
-- [The Unix Shell](http://swcarpentry.github.io/shell-novice/) (Software Carpentery)
-- [The Unix Workbench](https://seankross.com/the-unix-workbench/) (Sean Kross)
 - [Data Science at the Command Line](https://www.datascienceatthecommandline.com/) (Jeroen Janssens)
 - [Effective Shell](https://effective-shell.com/) (Dave Kerr)
+- [Terminal Trove](https://terminaltrove.com/) — a browsable, curated catalog of modern command-line tools, updated constantly.
+- [awesome-cli-apps](https://github.com/agarrharr/awesome-cli-apps) and [awesome-shell](https://github.com/alebcay/awesome-shell) — the canonical community-curated lists on GitHub.
+- [explainshell.com](https://explainshell.com/) — paste any command and every flag gets annotated from the man pages. Perfect for decoding commands you found online — or commands an AI agent wants to run on your machine.
 - [Using AWK and R to parse 25tb](https://livefreeordichotomize.com/posts/2019-06-04-using-awk-and-r-to-parse-25tb/index.html) (Nick Strayer)
+
+
+---
+# A shell toolbox for data scientists
+
+The built-ins are just the start — a rich ecosystem of installable CLI tools is especially useful for data work (all installable via your package manager, e.g. `brew install duckdb jq` on macOS):
+
+| Tool | What it does |
+|:--|:--|
+| [jq](https://jqlang.org/) | filter and reshape JSON — the `dplyr` of API responses |
+| [curl](https://curl.se/) | talk to any web API |
+| [csvkit](https://csvkit.readthedocs.io/) / [qsv](https://github.com/dathere/qsv) | CSV toolkits: instant summary stats, delimiter-aware cut/grep |
+| [VisiData](https://www.visidata.org/) | interactive spreadsheet in the terminal — pivot a 2 GB CSV |
+| [DuckDB](https://duckdb.org/) | run SQL directly on CSV/Parquet files — plays nicely with R |
+| [tmux](https://github.com/tmux/tmux/wiki) | keep shell sessions alive on remote servers |
+| [GNU parallel](https://www.gnu.org/software/parallel/) | parallelize any loop over files or arguments |
+| [pandoc](https://pandoc.org/) & friends | convert documents (pandoc), PDFs (poppler), images (ImageMagick), media (ffmpeg) |
+| [llm](https://llm.datasette.io/) / [claude](https://claude.com/claude-code) | LLMs as pipeable command-line tools |
+
+
+
+
 
 
 
