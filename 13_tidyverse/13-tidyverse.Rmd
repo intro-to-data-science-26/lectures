@@ -344,7 +344,7 @@ class: inverse, center, middle
 # The pipe
 <br><br><br><br><br>
 <div align="center" class = "font750">
-%>%
+|>
 </div>
 
 ---
@@ -354,15 +354,15 @@ class: inverse, center, middle
 .pull-left[
 **The pipe way**
 ```{r, eval = FALSE}
-Alex %>%
-  wake_up(7) %>%
-  shower(temp = 38) %>%
-  breakfast(c("coffee", "croissant")) %>%
-  walk(step_function()) %>%
+Alex |>
+  wake_up(7) |>
+  shower(temp = 38) |>
+  breakfast(c("coffee", "croissant")) |>
+  walk(step_function()) |>
   bvg(
     train = "U2",
     destination = "Stadtmitte"
-  ) %>%
+  ) |>
   hertie(course = "Intro to DS")
 ```
 ]
@@ -400,15 +400,15 @@ hertie(
 .pull-left[
 **The pipe way**
 ```{r, eval = FALSE}
-Alex %>%
-  wake_up(7) %>%
-  shower(temp = 38) %>%
-  breakfast(c("coffee", "croissant")) %>%
-  walk(step_function()) %>%
+Alex |>
+  wake_up(7) |>
+  shower(temp = 38) |>
+  breakfast(c("coffee", "croissant")) |>
+  walk(step_function()) |>
   bvg(
     train = "U2",
     destination = "Stadtmitte"
-  ) %>%
+  ) |>
   hertie(course = "Intro to DS")
 ```
 ]
@@ -437,8 +437,8 @@ alex_hertie <- hertie(alex_on_train,
 
 ### A simple but powerful tool
 
-- The forward-pipe operator `%>%` pipes the left-hand side values forward into expressions on the right-hand side.
-- We replace `f(x)` with `x %>% f()`.
+- The forward-pipe operator `|>` pipes the left-hand side values forward into expressions on the right-hand side.
+- We replace `f(x)` with `x |> f()`.
 
 --
 
@@ -456,7 +456,7 @@ alex_hertie <- hertie(alex_on_train,
 
 - The pipe was originally created in 2014 by [Stefan Milton Bache](https://stefanbache.dk/) and published with the [`magrittr`](https://magrittr.tidyverse.org/) package.
 - Magrittr? [Get it?](https://en.wikipedia.org/wiki/The_Treachery_of_Images) 🤡
-- The basics come with the tidyverse by default, but `magrittr` can do more (watch out for the ["tee" pipe](https://magrittr.tidyverse.org/reference/tee.html), `%T>%`, the ["exposition" pipe](https://magrittr.tidyverse.org/reference/exposition.html), `%$%`, and the ["assignment" pipe](https://magrittr.tidyverse.org/reference/compound.html), `%<>%`). Also, be sure to check out [aliases](https://rdrr.io/cran/magrittr/man/aliases.html).
+- Since R 4.1, base R has its own native pipe, `|>`, which is what we use in this course (see next slide). The `magrittr` pipe `%>%` still works and can do more (watch out for the ["tee" pipe](https://magrittr.tidyverse.org/reference/tee.html), `%T>%`, the ["exposition" pipe](https://magrittr.tidyverse.org/reference/exposition.html), `%$%`, and the ["assignment" pipe](https://magrittr.tidyverse.org/reference/compound.html), `%<>%`). Also, be sure to check out [aliases](https://rdrr.io/cran/magrittr/man/aliases.html).
 
 
 ---
@@ -472,15 +472,15 @@ alex_hertie <- hertie(alex_on_train,
 
 ### Instead, here's how to use it
 
-- `%>%` should always have a space before it, and should usually be followed by a new line.
+- `|>` should always have a space before it, and should usually be followed by a new line.
 - A one-step pipe can stay on one line, but unless you plan to expand it later on, you should consider rewriting it to a regular function call.
-- `magrittr` allows you to omit `()` on functions that don't have arguments (as in `mydata %>% summary`). Avoid this feature.
+- Always write out the brackets on the right-hand side, as in `mydata |> summary()`. (The `magrittr` pipe `%>%` lets you omit them, the native pipe doesn't.)
 
 ---
 
 # The base R pipe: |>
 
-The magrittr pipe has proven so successful and popular that the R core team [recently added](https://stat.ethz.ch/R-manual/R-devel/library/base/html/pipeOp.html) a "native" pipe operator to base R (version 4.1), denoted `|>`.<sup>1</sup>
+The magrittr pipe has proven so successful and popular that the R core team [added](https://stat.ethz.ch/R-manual/R-devel/library/base/html/pipeOp.html) a "native" pipe operator to base R in 2021 (version 4.1), denoted `|>`.
 
 --
 
@@ -491,14 +491,12 @@ mtcars |> subset(cyl == 4) |> head()
 mtcars |> subset(cyl == 4) |> (\(x) lm(mpg ~ disp, data = x))()
 ```
 
-.footnote[<sup>1</sup> That's actually a `|` followed by a `>`. The default font on these slides just makes it look extra fancy.]
-
 --
 
 - This illustrates how the popularity of the tidyverse has repercussions on the development of base R.
 - Note that with the native pipe, the RHS function has to be written out together with the brackets (i.e., `... |> head()` instead of `... |> head`).
 - Also note the use of the new shorthand inline function syntax, `\(x)`, to pass content to the RHS but not to the first argument.
-- Now, should we use the "magrittr" pipe or the native pipe? The native pipe might make more sense in the long term, since it avoids dependencies and might be more efficient. Check out [this Stackoverflow post](https://stackoverflow.com/questions/67633022/what-are-the-differences-between-rs-new-native-pipe-and-the-magrittr-pipe) for a discussion of differences.
+- Now, should we use the "magrittr" pipe or the native pipe? The native pipe makes more sense in the long term, since it avoids dependencies and is a bit more efficient. That's why we use `|>` throughout this course. Check out [this Stackoverflow post](https://stackoverflow.com/questions/67633022/what-are-the-differences-between-rs-new-native-pipe-and-the-magrittr-pipe) for a discussion of differences.
 
 ---
 background-image: url("pics/tidyverse-vintage.jpeg")
@@ -559,10 +557,10 @@ name: filter
 
 # 1) dplyr::filter()
 
-We can chain multiple filter commands with the pipe (`%>%`), or just separate them within a single filter command using commas.
+We can chain multiple filter commands with the pipe (`|>`), or just separate them within a single filter command using commas.
 
 ```{r filter1}
-starwars %>% 
+starwars |> 
   filter( 
     species == "Human", 
     height >= 190
@@ -575,7 +573,7 @@ starwars %>%
 
 Regular expressions work well, too.
 ```{r filter2}
-starwars %>% 
+starwars |> 
   filter(stringr::str_detect(name, "Skywalker"))
 ```
 
@@ -585,7 +583,7 @@ starwars %>%
 
 A very common `filter()` use case is identifying (or removing) missing data cases. 
 ```{r filter3}
-starwars %>% 
+starwars |> 
   filter(is.na(height))
 ```
 
@@ -601,7 +599,7 @@ To remove missing observations, simply use negation: `filter(!is.na(height))`.
 Importantly, when we list several filter conditions, `filter()` interprets them as a Boolean "AND". 
 
 ```{r filter4}
-starwars %>% 
+starwars |> 
   filter(str_detect(name, "Skywalker"), 
                     eye_color == "blue")
 ```
@@ -611,7 +609,7 @@ starwars %>%
 We can work with operators `|` ("OR") and `&` ("AND") and combine them with parentheses to specify more complex filter commands, as in:
 
 ```{r filter5, eval = FALSE}
-starwars %>% 
+starwars |> 
   filter(species == "Wookiee" | (species == "Human" & height >= 200))
 ```
 
@@ -623,7 +621,7 @@ starwars %>%
 `arrange()` sorts observations in increasing order by default.
 
 ```{r arrange1}
-starwars %>% 
+starwars |> 
   arrange(birth_year)
 ```
 
@@ -638,7 +636,7 @@ starwars %>%
 We can also arrange items in descending order using `arrange(desc())`.
 
 ```{r arrange2}
-starwars %>% 
+starwars |> 
   arrange(desc(birth_year))
 ```
 
@@ -650,7 +648,7 @@ name: select
 Use commas to select multiple columns out of a data frame. (You can also use `<first>:<last>` for consecutive columns). Deselect a column with "-".
 
 ```{r select1}
-starwars %>% 
+starwars |> 
   select(name:skin_color, species, -height)
 ```
 
@@ -660,7 +658,7 @@ starwars %>%
 
 You can also rename some (or all) of your selected variables in place.
 ```{r select2}
-starwars %>%
+starwars |>
   select(alias = name, crib = homeworld, sex = gender) 
 ```
 
@@ -674,7 +672,7 @@ If you just want to rename columns without subsetting them, you can use `rename(
 
 The `select(contains(<PATTERN>))` option provides a nice shortcut in relevant cases.
 ```{r select3}
-starwars %>% 
+starwars |> 
   select(name, contains("color"))
 ```
 
@@ -689,8 +687,8 @@ There are many more useful selection helpers, such as `starts_with()`, `ends_wit
 The `select(..., everything())` option is another useful shortcut if you only want to bring some variable(s) to the "front" of a data frame.
 
 ```{r select4}
-starwars %>% 
-  select(species, homeworld, everything()) %>%
+starwars |> 
+  select(species, homeworld, everything()) |>
   head(5)
 ```
 
@@ -707,12 +705,12 @@ starwars %>%
 You can create new columns from scratch with `mutate()`, or (more commonly) as transformations of existing columns.
 
 ```{r mutate2}
-starwars %>% 
-  select(name, birth_year) %>%
+starwars |> 
+  select(name, birth_year) |>
   mutate(
     dog_years = birth_year * 7, ## Separate with a comma
     comment = paste0(name, " is ", dog_years, " in dog years.")
-    ) %>%
+    ) |>
   slice(1:6) # Just show first six observations
 ```
 
@@ -726,10 +724,10 @@ starwars %>%
 
 Boolean, logical and conditional operators all work well with `mutate()` too.
 ```{r mutate3}
-starwars %>% 
-  select(name, height) %>%
-  filter(name %in% c("Luke Skywalker", "Anakin Skywalker")) %>% 
-  mutate(tall1 = height > 180) %>%
+starwars |> 
+  select(name, height) |>
+  filter(name %in% c("Luke Skywalker", "Anakin Skywalker")) |> 
+  mutate(tall1 = height > 180) |>
   mutate(tall2 = ifelse(height > 180, "Tall", "Short")) ## Same effect, but can choose labels
 
 ```
@@ -741,9 +739,9 @@ starwars %>%
 Lastly, combining `mutate()` with the `across()` feature allows you to easily work on a subset of variables. For example:
 
 ```{r, mutate4}
-starwars %>% 
-  select(name:eye_color) %>% 
-  mutate(across(where(is.character), toupper)) %>% #<< 
+starwars |> 
+  select(name:eye_color) |> 
+  mutate(across(where(is.character), toupper)) |> #<< 
   head(5)
 ```
 
@@ -760,9 +758,9 @@ name: summarize
 You can summarize variables with all sorts of operations (e.g., `mean()`, `median()`, `n()`, `n_distinct()`, `sum()`, `first()`, `last()`, ...).
 
 ```{r summ1}
-starwars %>% 
-  group_by(species, gender) %>% 
-  summarize(mean_height = mean(height, na.rm = TRUE)) %>%
+starwars |> 
+  group_by(species, gender) |> 
+  summarize(mean_height = mean(height, na.rm = TRUE)) |>
   head(5)
 ```
 
@@ -780,8 +778,8 @@ You can also calculate grouped summary statistics using an alternate approach of
 
 
 ```{r summ2}
-starwars %>% 
-  summarize(mean_height = mean(height, na.rm = TRUE), .by = c(species, gender)) %>%
+starwars |> 
+  summarize(mean_height = mean(height, na.rm = TRUE), .by = c(species, gender)) |>
   head(5)
 ```
 
@@ -798,10 +796,10 @@ Note that including `na.rm = TRUE` is usually a good idea with the functions fed
 
 ```{r summ3}
 ## Probably not what we want
-starwars %>% 
+starwars |> 
   summarize(mean_height = mean(height))
 ## Much better
-starwars %>% 
+starwars |> 
   summarize(mean_height = mean(height, na.rm = TRUE))
 ```
 
@@ -812,9 +810,9 @@ starwars %>%
 The same `across()`-based workflow that we saw with `mutate()` a few slides back also works with `summarize()`. For example:
 
 ```{r, summ4}
-starwars %>% 
-  group_by(species) %>% 
-  summarize(across(where(is.numeric), mean, na.rm = TRUE)) %>%
+starwars |> 
+  group_by(species) |> 
+  summarize(across(where(is.numeric), mean, na.rm = TRUE)) |>
   head(5)
 ```
 
@@ -826,7 +824,7 @@ starwars %>%
 With `group_by()`, you can create a "grouped" copy of a table grouped by unique values of a column. If multiple columns are specified, the function groups by all available combinations of values.
 
 ```{r, groupby1}
-by_species_gender <- starwars %>% group_by(species, gender) 
+by_species_gender <- starwars |> group_by(species, gender) 
 by_species_gender
 ```
 
@@ -849,8 +847,8 @@ by_species_gender
 </br>
 ```{r, groupby2}
 options(dplyr.summarise.inform = FALSE)
-by_species_gender %>% 
-  summarize(mean(height, na.rm = TRUE)) %>% 
+by_species_gender |> 
+  summarize(mean(height, na.rm = TRUE)) |> 
   filter(n_distinct(gender) ==2)
 ```
 ]
@@ -864,7 +862,7 @@ by_species_gender %>%
 `slice()`: Subset rows by position rather than filtering by values. There's also `slice_sample()` to randomly select rows, `slice_head()` and `slice_tail()`to select first or last rows, and more.
 
 ```{r}
-starwars %>% slice(c(1, 5))
+starwars |> slice(c(1, 5))
 ```
 
 --
@@ -872,7 +870,7 @@ starwars %>% slice(c(1, 5))
 `pull()`: Extract a column from as a data frame as a vector or scalar.
 
 ```{r}
-starwars %>% filter(gender=="feminine") %>% pull(height)
+starwars |> filter(gender=="feminine") |> pull(height)
 ```
 
 ---
@@ -882,13 +880,13 @@ starwars %>% filter(gender=="feminine") %>% pull(height)
 `count()` and `distinct()`: Number and isolate unique observations.
 
 ```{r}
-starwars %>% count(species) %>% head(6)
-starwars %>% distinct(species) %>% pull() %>% sort() %>% magrittr::extract(1:5) 
+starwars |> count(species) |> head(6)
+starwars |> distinct(species) |> pull() |> sort() |> head(5) 
 ```
 
 --
 
-You could also use a combination of `mutate()`, `group_by()`, and `n()`, e.g. `starwars %>% group_by(species) %>% mutate(num = n())`.
+You could also use a combination of `mutate()`, `group_by()`, and `n()`, e.g. `starwars |> group_by(species) |> mutate(num = n())`.
 
 ---
 
@@ -897,7 +895,7 @@ You could also use a combination of `mutate()`, `group_by()`, and `n()`, e.g. `s
 `where()`: Select the variables for which a function returns true.
 
 ```{r}
-starwars %>% select(where(is.numeric)) %>% names()
+starwars |> select(where(is.numeric)) |> names()
 ```
 
 --
@@ -905,8 +903,8 @@ starwars %>% select(where(is.numeric)) %>% names()
 `across()`: Summarize or mutate multiple variables in the same way. More information [here](https://dplyr.tidyverse.org/reference/across.html).
 
 ```{r}
-starwars %>% 
-  mutate(across(where(is.numeric), scale)) %>% 
+starwars |> 
+  mutate(across(where(is.numeric), scale)) |> 
   head(3)
 ```
 
@@ -918,7 +916,7 @@ starwars %>%
 `case_when()`: Vectorize multiple `if_else()` (or base R `ifelse()`) statements.
 
 ```{r}
-starwars %>% 
+starwars |> 
   mutate( 
     height_cat = case_when(
       height < 160 ~ "tiny",
@@ -926,8 +924,8 @@ starwars %>%
       height >= 190 & height < 220 ~ "tall",
       height >= 220 ~ "giant"
     )
-  ) %>%
-  pull(height_cat) %>% table()
+  ) |>
+  pull(height_cat) |> table()
 ```
 
 --
@@ -1068,7 +1066,7 @@ stocks
 --
 
 ```{r pivot_longer1b}
-tidy_stocks <- stocks %>% pivot_longer(-time, names_to = "stock", values_to = "price")
+tidy_stocks <- stocks |> pivot_longer(-time, names_to = "stock", values_to = "price")
 tidy_stocks
 ```
 
@@ -1079,13 +1077,13 @@ name: pivotwider
 # 2) tidyr::pivot_wider()
 
 ```{r pivot_wider1a, eval = FALSE}
-tidy_stocks %>% pivot_wider(names_from = stock, values_from = price)
+tidy_stocks |> pivot_wider(names_from = stock, values_from = price)
 ```
 
 --
 
 ```{r pivot_wider1b, eval = FALSE}
-tidy_stocks %>% pivot_wider(names_from = time, values_from = price)
+tidy_stocks |> pivot_wider(names_from = time, values_from = price)
 ```
 
 --
@@ -1112,7 +1110,7 @@ economists
 `separate()` in action: 
 
 ```{r sep1b}
-economists %>% separate(name, c("first_name", "last_name")) 
+economists |> separate(name, c("first_name", "last_name")) 
 ```
 
 --
@@ -1128,7 +1126,7 @@ You can also specify the separation character with `separate(..., sep=".")`. The
 The same can also be achieve using new syntax wherein the uses of `separate()` are more obvious, the API is more polished, and the handling of problems is better.. When we have a clear separation character, we can use `separate_wider_delim` that splits using a delimiter:
 
 ```{r sep2a}
-economists %>%
+economists |>
   separate_wider_delim(
     cols = name,
     delim = ".",
@@ -1145,7 +1143,7 @@ When we want to separate at fixed widths, where the positions of characters are 
 ```{r sep3a}
 economists$attribute <- c("m-34", "m-23", "f-38")
 economists
-economists %>%
+economists |>
   separate_wider_position(attribute, c(sex = 1, 1, age = 2) 
     )
 ```
@@ -1171,7 +1169,7 @@ jobs
 `separate_rows()` in action: 
 
 ```{r sep4b}
-jobs %>% separate_rows(occupation)
+jobs |> separate_rows(occupation)
 ```
 
 
@@ -1191,7 +1189,7 @@ gdp = data.frame(
   )
 gdp 
 ## Combine "yr", "mnth", and "dy" into one "date" column
-gdp %>% unite(date, c("yr", "mnth", "dy"), sep = "-")
+gdp |> unite(date, c("yr", "mnth", "dy"), sep = "-")
 ```
 
 ---
@@ -1201,10 +1199,10 @@ gdp %>% unite(date, c("yr", "mnth", "dy"), sep = "-")
 .pull-left[
 Note that `unite()` will automatically create a character variable. You can see this better if we convert it to a tibble. 
 ```{r unite2}
-gdp_u = gdp %>% 
+gdp_u = gdp |> 
   unite(date, 
         c("yr", "mnth", "dy"), 
-        sep = "-") %>% 
+        sep = "-") |> 
   as_tibble()
 gdp_u
 ```
@@ -1217,7 +1215,7 @@ If you want to convert it to something else (e.g. date or numeric) then you will
 
 ```{r unite3, message=F}
 library(lubridate)
-gdp_u %>% mutate(date = ymd(date))
+gdp_u |> mutate(date = ymd(date))
 ```
 ]
 
@@ -1520,14 +1518,13 @@ height<-feet*12+inches
 **Piping**
  
 ```{r, eval = FALSE} 
-babynames %>%
-  filter(name %>% equals("Kim")) %>%
-  group_by(year, sex) %>%
-  summarize(total = sum(n)) %>%
-  qplot(year, total, color = sex, data = ., 
-        geom = "line") %>%
-  add(ggtitle('People named "Kim"')) %>%
-  print
+babynames |>
+  filter(name == "Kim") |>
+  group_by(year, sex) |>
+  summarize(total = sum(n)) |>
+  ggplot(aes(year, total, color = sex)) +
+  geom_line() +
+  ggtitle('People named "Kim"')
 ``` 
 ]
 

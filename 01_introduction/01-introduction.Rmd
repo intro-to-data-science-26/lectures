@@ -920,8 +920,8 @@ if (!is.null(pop_df)) {
 }
 
 ## Plot it
-pop_df %>%
-  mutate(lang = lang %>% factor(ordered = T)) %>%
+pop_df |>
+  mutate(lang = lang |> factor(ordered = T)) |>
   ggplot(aes(x = lang, y = n_jobs, fill = free)) +
   geom_col() +
   geom_hline(yintercept = 0) +

@@ -256,7 +256,7 @@ The XPath expression reads:
 **Step 3:** Extract information and clean it up
 
 ```{r, eval = TRUE}
-phil_names <- elements_set %>% html_text2()
+phil_names <- elements_set |> html_text2()
 phil_names[c(1:2, 101:102)]
 ```
 
@@ -599,8 +599,8 @@ rvest_session <- session(url,
                R.Version()$version.string
              )
 ) 
-headlines <- rvest_session %>% 
-             html_elements(xpath = "p//a") %>% 
+headlines <- rvest_session |> 
+             html_elements(xpath = "p//a") |> 
              html_text()
 ```
 
@@ -857,8 +857,8 @@ The API also allows for batch processing. This gives you the ability to query mu
 endpoint <- "http://ip-api.com/batch"
 response <- httr::POST(url = endpoint, body = 
     '["208.80.152.201", "91.198.174.192"]', encode = "json")
-httr::content(response, as = "text") %>% 
-  jsonlite::fromJSON() %>% 
+httr::content(response, as = "text") |> 
+  jsonlite::fromJSON() |> 
   as.data.frame()
 ```
 ]

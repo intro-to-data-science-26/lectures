@@ -181,7 +181,7 @@ Every `for()` loop has three components:
 Compute the median of every column of a data frame:
 
 ```{r}
-df <- starwars %>%
+df <- starwars |>
   select(height, mass, birth_year)
 
 medians <- numeric(ncol(df))     # output
@@ -400,8 +400,8 @@ This is extremely handy for deeply nested data, e.g., parsed JSON from web APIs 
 paths <- list.files("data/polls",
                     pattern = "\\.csv$",
                     full.names = TRUE)
-polls_df <- paths %>%
-  map(read_csv) %>% # list of data frames
+polls_df <- paths |>
+  map(read_csv) |> # list of data frames
   list_rbind()      # bind into one data frame
 ```
 
@@ -459,8 +459,8 @@ map_dbl(x, possibly(log2, otherwise = NA_real_))
 Back to the many-files example — read what can be read, skip the rest:
 
 ```{r, eval = FALSE}
-paths %>%
-  map(possibly(read_csv, otherwise = NULL)) %>%
+paths |>
+  map(possibly(read_csv, otherwise = NULL)) |>
   list_rbind() # NULLs are dropped automatically
 ```
 
@@ -497,12 +497,12 @@ The same pattern, repeated four times — that's a violation of the DRY principl
 `dplyr`'s `across()` applies one or more functions to a selection of columns inside `summarize()` or `mutate()`:
 
 ```{r}
-starwars %>%
-  group_by(species) %>%
+starwars |>
+  group_by(species) |>
   summarize(
     across(c(height, mass),
            list(mean = \(x) mean(x, na.rm = TRUE),
-                sd   = \(x) sd(x, na.rm = TRUE)))) %>%
+                sd   = \(x) sd(x, na.rm = TRUE)))) |>
   print(n = 5)
 ```
 ]
@@ -518,16 +518,16 @@ The first argument of `across()` uses the same tidy-select syntax you know from 
 
 ```{r, eval = FALSE}
 # all numeric columns
-starwars %>%
+starwars |>
   summarize(across(where(is.numeric),
                    \(x) median(x, na.rm = TRUE)))
 
 # all (non-grouping) columns
-starwars %>%
+starwars |>
   summarize(across(everything(), n_distinct))
 
 # turn all character columns into factors
-starwars %>%
+starwars |>
   mutate(across(where(is.character), as.factor))
 ```
 
@@ -543,9 +543,9 @@ The `.names` argument controls the naming of output columns, e.g. `.names = "{.f
 
 ```{r}
 # rows with missings in height OR mass
-starwars %>%
-  filter(if_any(c(height, mass), is.na)) %>%
-  select(name, height, mass) %>%
+starwars |>
+  filter(if_any(c(height, mass), is.na)) |>
+  select(name, height, mass) |>
   print(n = 5)
 ```
 ]
@@ -770,11 +770,11 @@ j_order <- sapply(c("Fellowship", "Towers", "Return"),
 new_levels <- old_levels[j_order]
 
 ## process data set 
-lotr_dat <- lotr_dat %>%
+lotr_dat <- lotr_dat |>
   # apply new factor levels to Film
 	mutate(Film = factor(as.character(Film), new_levels),
 	# revalue Race
-	Race = recode(Race, `Ainur` = "Wizard", `Men` = "Man")) %>%
+	Race = recode(Race, `Ainur` = "Wizard", `Men` = "Man")) |>
 ## <skipping some steps here to avoid slide overflow>
 
 ## write data to file
@@ -800,7 +800,7 @@ In the following, we will work with this toy pipeline:
 
 ```{r, eval = FALSE}
 ## import clean data
-lotr_dat <- read_tsv("lotr_clean.tsv") %>% 
+lotr_dat <- read_tsv("lotr_clean.tsv") |> 
 # reorder Race based on words spoken
 mutate(Race = reorder(Race, Words, sum))
 

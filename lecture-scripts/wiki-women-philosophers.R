@@ -21,7 +21,7 @@ elements_set <- html_elements(url_p, xpath = "//h2[text()='Alphabetically']//fol
   
 # Step 3: Extract information and clean it up
 
-phil_names <- elements_set %>% html_text2()
+phil_names <- elements_set |> html_text2()
 phil_names[c(1:2, 101:102)]
 
 
@@ -36,7 +36,7 @@ philosopher_names_clean[1:5]
 
 
 # extract links
-phil_links <- elements_set %>% html_attr("href")
+phil_links <- elements_set |> html_attr("href")
 phil_links_clean <- phil_links[names_iffer]
 phil_links_full <- paste0("https://en.wikipedia.org", phil_links_clean)
 download.file(phil_links_full[1:2], destfile = basename(phil_links_full[1:2]))

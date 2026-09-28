@@ -734,7 +734,7 @@ Let's perform a [left join](https://stat545.com/bit001_dplyr-cheatsheet.html#lef
 --
 
 ```{r join1}
-left_join(flights, planes) %>%
+left_join(flights, planes) |>
   select(year, month, day, dep_time, arr_time, carrier, flight, tailnum, type, model)
 ```
 
@@ -767,10 +767,10 @@ You just need to be more explicit in your join call by using the `by = ` argumen
 ```{r join2}
 left_join(
   flights,
-  planes %>% rename(year_built = year), ### Not necessary w/ below line, but helpful
+  planes |> rename(year_built = year), ### Not necessary w/ below line, but helpful
   by = "tailnum" ### Be specific about the joining column
-  ) %>%
-  select(year, month, day, dep_time, arr_time, carrier, flight, tailnum, year_built, type, model) %>%
+  ) |>
+  select(year, month, day, dep_time, arr_time, carrier, flight, tailnum, year_built, type, model) |>
   head(3) ### Just to save vertical space on the slide
 ```
 
@@ -785,8 +785,8 @@ left_join(
   flights,
   planes, ### Not renaming "year" to "year_built" this time
   by = "tailnum"
-  ) %>%
-  select(contains("year"), month, day, dep_time, arr_time, carrier, flight, tailnum, type, model) %>%
+  ) |>
+  select(contains("year"), month, day, dep_time, arr_time, carrier, flight, tailnum, type, model) |>
   head(3)
 ```
 
@@ -1188,7 +1188,7 @@ flights_db <- tbl(con, "flights")
 Note that `flights_db` is a remote source; the table is not stored in our local environment. We can use it as a "pointer" to the actual database. Next, we perform various queries, such as:
 
 ```{r}
-flights_db %>% select(year:day, dep_delay, arr_delay) %>% head(3)
+flights_db |> select(year:day, dep_delay, arr_delay) |> head(3)
 ```
 
 Yes, we can use `dplyr` syntax to do database queries! 
@@ -1204,13 +1204,13 @@ The most important difference between ordinary data frames and remote database q
 This even applies when you assign the output of a database query to an object:
 
 ```{r}
-tailnum_delay_db <- flights_db %>% 
-  group_by(tailnum) %>%
+tailnum_delay_db <- flights_db |> 
+  group_by(tailnum) |>
   summarise(
     delay = mean(arr_delay),
     n = n()
-  ) %>% 
-  arrange(desc(delay)) %>%
+  ) |> 
+  arrange(desc(delay)) |>
   filter(n > 100)
 ```
 
@@ -1232,7 +1232,7 @@ tail(tailnum_delay_db)
 If you then want to pull the data into a local data frame, use `dplyr::collect()`:
 
 ```{r, warning = FALSE}
-tailnum_delay <- tailnum_delay_db %>% collect()
+tailnum_delay <- tailnum_delay_db |> collect()
 tailnum_delay
 ```
 
@@ -1245,7 +1245,7 @@ Again, because it is so cool: Yes, we can use `dplyr` syntax to do database quer
 You can use the `show_query()` function to display the SQL code that was used to generate a queried table: 
 
 ```{r, warning = FALSE}
-tailnum_delay_db %>% show_query()
+tailnum_delay_db |> show_query()
 ```
 
 If you still want to formulate SQL queries and pass them on to the DBMS, use `DBI::dbGetQuery()`:

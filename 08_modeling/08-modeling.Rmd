@@ -315,9 +315,9 @@ covars <- c("dep_delay", "carrier", "origin", "air_time", "distance", "hour")
 
 ```{r, eval = TRUE}
 combinations <- 
-  map(1:6, function(x) {combn(1:6, x)}) %>% # create all possible combinations (draw 1 to 6 out of 6)
-  map(ncol) %>% # extract number of combinations
-  unlist() %>% # pull out of list structure
+  map(1:6, function(x) {combn(1:6, x)}) |> # create all possible combinations (draw 1 to 6 out of 6)
+  map(ncol) |> # extract number of combinations
+  unlist() |> # pull out of list structure
   sum() # compute sum
 combinations
 ```
@@ -893,7 +893,7 @@ residuals(model_out)[1:5]
 coef(model_out)
 fitted.values(model_out)[1:5]
 residuals(model_out)[1:5]
-model.matrix(model_out) %>% head(4)
+model.matrix(model_out) |> head(4)
 ```
 ]
 
@@ -1042,7 +1042,7 @@ broom::glance(model_out)
   - standard errors of fitted values (`.se.fit`; optional)
 
 ```{r, eval = TRUE}
-broom::augment(model_out, se_fit = TRUE) %>% head(3)
+broom::augment(model_out, se_fit = TRUE) |> head(3)
 ```
 
 --
@@ -1080,8 +1080,8 @@ models_broom_df <- map_dfr(models_broom, rbind)
 **Step 5: Summarize the estimates for subset of key predictors**
 
 ```{r, eval = TRUE, fig.height = 1.75}
-models_broom_df %>% 
-  filter(!str_detect(term, "Intercept|carrier")) %>%
+models_broom_df |> 
+  filter(!str_detect(term, "Intercept|carrier")) |>
   ggplot(aes(estimate)) + 
   geom_histogram(binwidth = .1, color = "red") + 
   geom_vline(xintercept = 0, linetype="dashed") + 

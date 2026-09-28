@@ -1,7 +1,7 @@
 library(tidyverse)
 
 ## import clean data
-lotr_dat <- read_tsv("lotr_clean.tsv") %>% 
+lotr_dat <- read_tsv("lotr_clean.tsv") |> 
 # reorder Race based on words spoken
 mutate(Race = reorder(Race, Words, sum))
 

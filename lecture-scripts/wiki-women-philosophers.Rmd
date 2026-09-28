@@ -25,7 +25,7 @@ elements_set <- html_elements(url_p, xpath = "//h2[text()='Alphabetically']//fol
   **Step 3:** Extract information and clean it up
 
 ```{r, eval = TRUE}
-phil_names <- elements_set %>% html_text2()
+phil_names <- elements_set |> html_text2()
 phil_names[c(1:2, 101:102)]
 ```
 

@@ -33,7 +33,7 @@ cities
 cities <- str_trim(cities)
 length(cities)
 length(unique(cities))
-tabyl(cities) %>% arrange(desc(n)) %>% head()
+tabyl(cities) |> arrange(desc(n)) |> head()
 unique_cities <- unique(cities)
 
 ## step 2: geocode cities

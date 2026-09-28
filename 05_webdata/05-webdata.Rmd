@@ -182,7 +182,7 @@ name: html
 - Markup language = plain text + markups
 - Originally specified by [Tim Berners-Lee](https://en.wikipedia.org/wiki/Tim_Berners-Lee) at [CERN](https://en.wikipedia.org/wiki/CERN) in 1989/90 
 - (Used to be a) [W3C](https://en.wikipedia.org/wiki/World_Wide_Web_Consortium) standard for the construction of websites.
-- The fundamentals of HTML haven't changed much recently. The latest W3C version is HTML5, which was released in 2014. The current specification, the [HTML Living Standard](https://en.wikipedia.org/wiki/HTML5#W3C_and_WHATWG_conflict), is maintained by the [WHATWG](https://whatwg.org/).
+- The fundamentals of HTML haven't changed much recently. The last W3C version was HTML5, released in 2014. Since 2019, the only authoritative specification is the [HTML Living Standard](https://en.wikipedia.org/wiki/HTML5#W3C_and_WHATWG_conflict), maintained by the [WHATWG](https://whatwg.org/).
 
 ### What is it good for?
 
@@ -213,7 +213,7 @@ name: html
 
 - HTML documents are hierarchically structured. Think of them as a tree with multiple nodes and branches.
 - When a webpage (HTML resource) is loaded, the browser creates a [Document Object Model](https://en.wikipedia.org/wiki/Document_Object_Model) of that page - the **DOM Tree**.
-- Think of it as a representation that considers all HTML elements as objects than can be accessed.
+- Think of it as a representation that considers all HTML elements as objects that can be accessed.
 
 ### Parts of the tree
 
@@ -253,10 +253,10 @@ name: html
 
 | Component  |  Representation |
 |---|---|
-| Element title  | `title` |
+| Element name  | `title` |
 |  Start tag |  `<title>` |
 |  End tag |  `</title>` |
-|  Value |  `First HTML` |
+|  Content |  `First HTML` |
 ]
 
 .pull-right[
@@ -285,7 +285,7 @@ name: html
 - Links to other pages or resources.
 - Classical links are always formatted with an anchor tag.
 - The `href` attribute determines the target location.
-- The value is the name of the link.
+- The element's content is the link text.
 
 Link to another resource:
 ```{html, eval = FALSE, prompt = FALSE}
@@ -419,7 +419,7 @@ Example:
 <table> 
   <tr> <th>Rank</th> <th>Nominal GDP</th> <th>Name</th> </tr> 
   <tr> <th></th> <th>(per capita, USD)</th> <th></th> </tr> 
-  <tr> <td>1</td> <td>170,373</td> <td>Lichtenstein</td> </tr> 
+  <tr> <td>1</td> <td>170,373</td> <td>Liechtenstein</td> </tr> 
   <tr> <td>2</td> <td>167,021</td> <td>Monaco</td> </tr> 
   <tr> <td>3</td> <td>115,377</td> <td>Luxembourg</td> </tr> 
   <tr> <td>4</td> <td>98,565</td> <td>Norway</td> </tr> 
@@ -569,8 +569,8 @@ Your browser does not support the video tag.
 
 ### A note on browser differences
 
-- Inspecting the source code (as shown on the following slides) works more or less identically in Chrome and Firefox.
-- In Safari, go to → `Preferences`, then → `Advanced` and select `Show Develop menu in menu bar`. This unlocks the `Show Page Source` and `Inspect` options and the Web Developer Tools.
+- Inspecting the source code (as shown on the previous slides) works more or less identically in Chrome and Firefox.
+- In Safari, go to → `Settings`, then → `Advanced` and select `Show features for web developers`. This unlocks the `Show Page Source` and `Inspect` options and the Web Developer Tools.
 ]
 
 .pull-right-small-center[
@@ -607,7 +607,7 @@ name: xpath
 
 - Our goal is to get HTML into R while retaining the tree structure. That's similar to getting a spreadsheet into R and retaining the rectangular structure.
 - HTML is human-readable, so we could also import HTML files as plain text via `readLines()`. That's a bad option though - the document's structure would not be retained.
-- The `xml2` package allows us to parse XML-style documents. HTML is a "flavor" of XML, so it works for us.
+- The `xml2` package allows us to parse XML-style documents. HTML and XML are both markup languages with a tree structure, so `xml2` can parse HTML, too.
 - The `rvest` package, which we will mainly use for scraping, wraps the `xml2` package, so we rarely have to load it manually. 
 - There is one high-level function to remember: `read_html()`. It represents the HTML in a list-style fashion.
 
@@ -620,7 +620,7 @@ Parsing a website is straightforward:
 
 ```{r, eval = TRUE, message= FALSE}
 library(rvest)
-parsed_doc <- read_html("https://google.com")
+parsed_doc <- read_html("https://www.r-project.org")
 parsed_doc
 ```
 
@@ -741,7 +741,7 @@ html_elements(parsed_doc, xpath = "/html/body/div/p/i")
 html_elements(parsed_doc, xpath = "//body//p/i")
 ```
 
-Relative paths are often preferrable. They are faster to write and more comprehensive. On the other hand, they are less targeted and therefore potentially less robust, and running them takes more computing time, as the entire tree has to be evaluated. But that's usually not relevant for reasonably small documents.
+Relative paths are often preferable. They are faster to write and more comprehensive. On the other hand, they are less targeted and therefore potentially less robust, and running them takes more computing time, as the entire tree has to be evaluated. But that's usually not relevant for reasonably small documents.
 
 ---
 # Grammar of XPath
@@ -765,7 +765,7 @@ html_elements(parsed_doc, xpath = "/html/body/*/i")
 
 ### Navigational operators `"."`and `".."`
 
-- `"."` accesses elements on the same level ("self axis"), which is useful when working with predicates (see later!).
+- `"."` refers to the current element itself ("self axis"), which is useful when working with predicates (see later!).
 - `".."` accesses elements at a higher hierarchical level.
 
 ```{r, eval = TRUE, message= FALSE}
@@ -840,7 +840,7 @@ html_elements(parsed_doc, xpath = "//p/preceding-sibling::h1")
 
 - Predicates are conditions based on an element's features (`true/false`).
 - Think of them as ways to filter nodesets.
-- They are applicable to a variety of features: name, value attribute.
+- They are applicable to a variety of features: name, content, attributes.
 - Basic syntax: `element[predicate]`
 
 Select all first `<p>` elements that are children of a `<div>` element, using a **numeric predicate**:
@@ -862,7 +862,7 @@ html_elements(parsed_doc, xpath = "//*[string-length(text())>50]")
 ---
 # Predicates (cont.)
 
-Select all `<div>` nodes that contain an attribute named `’October/2011’`, using a **textual predicate**:
+Select all `<div>` nodes whose `date` attribute has the value `'October/2011'`, using a **textual predicate**:
 
 ```{r, eval = TRUE, message= FALSE}
 html_elements(parsed_doc, xpath ="//div[@date='October/2011']")
@@ -888,33 +888,33 @@ html_elements(parsed_doc, xpath = "//div[substring-after(./@date, '/')='2003']//
 
 | Function  |  Argument | Return value |
 |---|---|---|
-| `html_text()` |  | Element value |
-| `html_text2()` |  | Element value (with a bit more cleanup) |
-| `html_attr()` | `name` | Element attribute |
+| `html_text()` | `trim` | Element content (text) |
+| `html_text2()` |  | Element content (with a bit more cleanup) |
+| `html_attr()` | `name` | Value of the named attribute |
 | `html_attrs()` |  | (All) element attributes |
-| `html_name()` | `trim` | Element name |
+| `html_name()` |  | Element name |
 | `html_children()` |  | Element children |
 
 
 ---
 # Content extraction (cont.)
 
-Extracting **element values/content**:
+Extracting **element content**:
 
 ```{r, eval = TRUE}
-html_elements(parsed_doc, xpath = "//title") %>% html_text2()
+html_elements(parsed_doc, xpath = "//title") |> html_text2()
 ```
 
 Extracting **attributes**:
 
 ```{r, eval = TRUE}
-html_elements(parsed_doc, xpath = "//div[1]") %>% html_attrs()
+html_elements(parsed_doc, xpath = "//div[1]") |> html_attrs()
 ```
 
 Extracting **attribute values**:
 
 ```{r, eval = TRUE}
-html_elements(parsed_doc, xpath = "//div") %>% html_attr("lang")
+html_elements(parsed_doc, xpath = "//div") |> html_attr("lang")
 ```
 
 
@@ -926,7 +926,6 @@ html_elements(parsed_doc, xpath = "//div") %>% html_attr("lang")
 - XPath is a little language of its own. As always with languages, mastery comes with practice.
 - A good environment for practice is the [XPath expression testbed at whitebeam.org](http://www.whitebeam.org/library/guide/TechNotes/xpathtestbed.rhtm).
 - Also check out this [cheat sheet](https://devhints.io/xpath).
-- The undoubtedly best way to learn it is [Xpath Diner](https://topswagcode.com/xpath/), inspired by [CSS Diner](https://flukeout.github.io/).
 
 ### XPath creator tools
 
@@ -1037,7 +1036,7 @@ name: regex
 .pull-left[
 ### Definition
 
-Regular expressions a.k.a. *regex* or *RegExp* is a tool - a little language of it's own really - that lets you describe patterns in text/strings.
+Regular expressions (a.k.a. *regex* or *RegExp*) are a tool - a little language of its own really - that lets you describe patterns in text/strings.
 
 Funnily, a regular expression itself is a sequence of characters, some with special, some with literal meaning.
 
@@ -1257,9 +1256,12 @@ str_extract(example.obj, "sm.ll")
 - As `\` is a meta character itself, we have to escape it with `\`, so we always write `\\`. 🤯
 - Alternatively, use `fixed("symbols")` to let the parser interpret a chain of symbols literally.
 
+- Since R 4.0, **raw strings** spare you the double escaping: `r"(\.)"` is the same pattern as `"\\."`.
+
 ```{r}
 unlist(str_extract_all(example.obj, "\\."))
 unlist(str_extract_all(example.obj, fixed(".")))
+unlist(str_extract_all(example.obj, r"(\.)"))
 ```
 
 
@@ -1298,6 +1300,24 @@ Some character classes are pre-defined. They are very convenient to efficiently 
   | `[:blank:]`  | Blank characters: Space and tab |
   | `[:space:]`  | Space characters: Space, tab, newline, and others |
   | `[:print:]`  | Printable characters: `[:alnum:]`, `[:punct:]` and `[:space:]`|
+
+
+---
+# Shorthand character classes
+
+In addition to the `[:name:]` classes, there are shorthands that you will see a lot (e.g., in [R for Data Science](https://r4ds.hadley.nz/regexps.html)). Remember that in R strings, the backslash has to be escaped, so we write `\\d` instead of `\d`.
+
+| Shorthand | Meaning | Opposite |
+|---|---|---|
+| `\\d` | Any digit | `\\D`: any non-digit |
+| `\\s` | Any whitespace (space, tab, newline) | `\\S`: any non-whitespace |
+| `\\w` | Any "word" character (letters, digits, underscore) | `\\W`: any non-word character |
+| `\\b` | A word boundary (start or end of a word) | `\\B`: not a word boundary |
+
+```{r}
+unlist(str_extract_all(example.obj, "\\d"))
+str_extract(example.obj, "\\b\\w{4}\\b")
+```
 
 
 ---
@@ -1363,11 +1383,11 @@ str_extract(example.obj, "A.+?sentence")
 ---
 # Backreferencing
 
-Sometimes it's useful to induce some "memory" into regex, as in: "Find something that matches a certain pattern, and then again a repeated match of previously matched pattern. 
+Sometimes it's useful to induce some "memory" into regex, as in: "Find something that matches a certain pattern, and then again a repeated match of the previously matched pattern." 
 
-The first pattern is defined with round brackets, as in `(pattern)`. We then refer to the it using `\1` (or with `\2` for the second pattern, etc.).
+The first pattern is defined with round brackets, as in `(pattern)`. We then refer to it using `\1` (or with `\2` for the second pattern, etc.).
 
-**Example:** Match the first letter, then anything until you ﬁnd the first letter again (not greedy).
+**Example:** Match the first letter, then anything until you find the first letter again (not greedy).
 
 ```{r}
 str_extract(example.obj, "([[:alpha:]]).+?\\1")
@@ -1389,13 +1409,45 @@ str_extract(example.obj, "([ [:punct:]][b-z]+[ [:punct:]]).+?\\1")
 
 - Match all letters without a, therefore: `[b-z]`
 - Match complete words with beginning/end: `[ [:punct:]]`
-- Define first word pattern* `(...)`
+- Define first word pattern `(...)`
 - Match anything between occurrences of both words: `.+?`
 - Refer to original word `\\1`
 
 
 
 
+
+---
+# More string functions with regex
+
+`stringr` offers many more functions that take a regular expression as the `pattern` argument. Their names all start with `str_`, which makes them easy to find with autocomplete.
+
+.pull-left[
+
+| Function | What it does |
+|---|---|
+| `str_detect()` | Does the string match the pattern? (`TRUE`/`FALSE`) |
+| `str_count()` | How many matches are there? |
+| `str_extract()` | Extract the first match |
+| `str_extract_all()` | Extract all matches |
+| `str_replace()` | Replace the first match |
+| `str_replace_all()` | Replace all matches |
+| `str_split()` | Split a string at every match |
+
+]
+
+.pull-right[
+
+```{r}
+fruits <- c("apple", "banana", "pear")
+str_detect(fruits, "an")
+str_count(fruits, "[aeiou]")
+str_replace_all(fruits, "[aeiou]", "-")
+```
+
+`str_detect()` works nicely with `filter()` to keep only the rows of a data frame that match a pattern.
+
+]
 
 ---
 

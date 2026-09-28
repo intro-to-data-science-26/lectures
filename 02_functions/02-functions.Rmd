@@ -1748,14 +1748,13 @@ height<-feet*12+inches
 **Piping**
  
 ```{r, eval = FALSE} 
-babynames %>%
-  filter(name %>% equals("Kim")) %>%
-  group_by(year, sex) %>%
-  summarize(total = sum(n)) %>%
-  qplot(year, total, color = sex, data = ., 
-        geom = "line") %>%
-  add(ggtitle('People named "Kim"')) %>%
-  print
+babynames |>
+  filter(name == "Kim") |>
+  group_by(year, sex) |>
+  summarize(total = sum(n)) |>
+  ggplot(aes(year, total, color = sex)) +
+  geom_line() +
+  ggtitle('People named "Kim"')
 ``` 
 ]
 
