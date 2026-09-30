@@ -67,8 +67,6 @@ library(tidyverse)
 
 5. [Regular expressions](#regex)
 
-6. [Summary](#summary)
-
 
 
 ---
@@ -1017,6 +1015,22 @@ name: css
 <img src="pics/flukeout-demo.gif" width=420>
 </div>
 ]
+
+
+---
+# XPath Diner
+
+<br><br><br>
+
+<div align="center" class="font200">
+Oh, by the way, there's XPath Diner, too! 🍽️
+</div>
+
+<br><br>
+
+<div align="center">
+Created by <a href="https://github.com/TopSwagCode/xpath-diner">TopSwagCode</a>. Find a hosted version on my website <a href="https://simonmunzert.com/xpath-diner/">here</a>.
+</div>
 
 
 
