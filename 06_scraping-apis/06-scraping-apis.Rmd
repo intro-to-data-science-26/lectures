@@ -32,7 +32,7 @@ output:
 options(htmltools.dir.version = FALSE)
 library(tidyverse)
 library(rvest)
-library(httr)
+library(httr2)
 library(knitr)
 opts_chunk$set(
   prompt = T,
@@ -67,8 +67,6 @@ library(tidyverse)
 3. [Web APIs: the basics](#apibasics)
 
 4. [JSON](#json)
-
-5. [Summary](#summary)
 
 
 
@@ -203,7 +201,7 @@ There are three key `rvest` verbs that you need to learn.<sup>1</sup>
 # Web scraping with rvest: example
 
 .pull-left-vsmall[
-- We are going to scrape a information from a Wikipedia article on women philosophers available at [https://en.wikipedia.org/wiki/](https://en.wikipedia.org/wiki/List_of_women_philosophers) [List_of_women_philosophers](https://en.wikipedia.org/wiki/List_of_women_philosophers).
+- We are going to scrape information from a Wikipedia article on women philosophers available at [https://en.wikipedia.org/wiki/](https://en.wikipedia.org/wiki/List_of_women_philosophers) [List_of_women_philosophers](https://en.wikipedia.org/wiki/List_of_women_philosophers).
 - The article provides two types of lists - one by period and one sorted alphabetically. We want the alphabetical list.
 - The information we are actually interested in - names - is stored in unordered list elements.
 ]
@@ -265,101 +263,12 @@ phil_names[c(1:2, 101:102)]
 **Step 4:** Clean up (here: select the subset of links we care about)
 
 ```{r, eval = TRUE}
-names_iffer <-
-  seq_along(phil_names) >=  seq_along(phil_names)[str_detect(phil_names, "Felicia Nimue Ackerman")] &
-  seq_along(phil_names) <=   seq_along(phil_names)[str_detect(phil_names, "Alenka Zupančič")]
-philosopher_names_clean <- phil_names[names_iffer]
+first <- which(str_detect(phil_names, "Felicia Nimue Ackerman"))
+last  <- which(str_detect(phil_names, "Alenka Zupan"))
+philosopher_names_clean <- phil_names[first:last]
 length(philosopher_names_clean)
 philosopher_names_clean[1:5]
 ```
-
-
-
-
----
-# Quick-n-dirty static webscraping with SelectorGadget
-
-.pull-left[
-
-### The hassle with XPath
-
-- The most cumbersome part of web scraping (data tidying aside) is the construction of XPath expressions that match the components of a page you want to extract.
-- It will take a couple of scraping projects until you’ll truly have mastered XPath.
-
-### A much-appreciated helper
-
-- **SelectorGadget** is a JavaScript browser plugin that constructs XPath statements (or CSS selectors) via a point-and-click approach.
-- It is available here: http://selectorgadget.com/ (there is also a Chrome extension).
-- The tool is magic and you will love it.
-
-]
-
---
-
-.pull-right[
-
-### What does SelectorGadget do?
-
-- You activate the tool on any webpage you want to scrape.
-- Based on your selection of components, the tool learns about your desired components and generates an XPath expression (or CSS selector) for you.
-
-### Under the hood
-
-- Based on your selection(s), the tool looks for similar elements on the page.
-- The underlying algorithm, which draws on Google’s diff-match-patch libraries, focuses on CSS characteristics, such as tag names and `<div>` and `<span>` attributes.
-
-]
-
----
-# SelectorGadget: example
-
-<video width="980" height="551" controls>
-  <source src="pics/selectorgadget-nytimes.mp4" type="video/mp4">
-Your browser does not support the video tag.
-</video>
-
-
----
-# SelectorGadget: example (cont.)
-
-```{r, eval = FALSE}
-library(rvest)
-url_p <- read_html("https://www.nytimes.com")
-# xpath: paste the expression from Selectorgadget!
-# note: we use single quotation marks here (' instead of ") to wrap around the expression!
-xpath <- '//*[contains(concat( " ", @class, " " ), concat( " ", "erslblw0", " " ))]//*[contains(concat( " ", @class, " " ), concat( " ", "e1lsht870", " " ))]'
-headlines <- html_elements(url_p, xpath = xpath) 
-headlines_raw <- html_text(headlines)
-length(headlines_raw)
-head(headlines_raw)
-```
-
-```{r, eval = TRUE, echo = FALSE}
-library(rvest)
-url_p <- read_html("materials/nytimes-com-2021-09-29.html")
-xpath <- '//*[contains(concat( " ", @class, " " ), concat( " ", "erslblw0", " " ))]//*[contains(concat( " ", @class, " " ), concat( " ", "e1lsht870", " " ))]'
-headlines <- html_elements(url_p, xpath = xpath) # we use single quotation marks here to wrap around the expression!
-headlines_raw <- html_text(headlines)
-length(headlines_raw)
-head(headlines_raw)
-```
-
-
----
-# SelectorGadget: when to use and not to use it
-
-Having learned about a semi-automated approach to generating XPath expressions, you might ask: 
-
-**Why bother with learning XPath at all?**
-
-Well...
-
-- SelectorGadget is not perfect. Sometimes, the algorithm will fail.
-- Starting from a different element sometimes (but not always!) helps.
-- Often the generated expressions are unnecessarily complex and therefore difficult to debug.
-- In my experience, SelectorGadget works 50-60% of the times when scraping from static webpages.
-- You are also prepared for the remaining 40-50%!
-
 
 
 ---
@@ -411,19 +320,33 @@ html_table(x,
 ---
 # Scraping HTML tables: example
 
-.pull-left-small[
-- We are going to scrape a small table from the Wikipedia page [https://en.wikipedia.org/wiki/](https://en.wikipedia.org/wiki/List_of_human_spaceflights) [List_of_human_spaceflights](https://en.wikipedia.org/wiki/List_of_human_spaceflights).
-- (Note that we're actually using an old version of the page (dating back to May 1, 2018), which is accessible [here](https://en.wikipedia.org/w/index.php?title=List_of_human_spaceflights&oldid=778165808). Wikipedia pages change, but this old revision and associated link won't.))
-- The table is not entirely clean: There are some empty cells, but also images and links.
-- The HTML code looks straightforward though.
+.pull-left-small2[
+- We are going to scrape a small table from the Wikipedia page [List_of_FIFA_World_Cup_finals](https://en.wikipedia.org/wiki/List_of_FIFA_World_Cup_finals).
+- (We're actually using a pinned revision from October 2026, accessible [here](https://en.wikipedia.org/w/index.php?title=List_of_FIFA_World_Cup_finals&oldid=1378907506). Wikipedia pages change, this revision won't.)
+- The table is not entirely clean: The score column mixes numbers with symbols and footnote markers, and there are flag icons, links, and a references column.
+- The HTML code looks straightforward though: a `<table>` with one `<tr>` per final.
 ]
 
-.pull-right-wide[
+.pull-right-wide2[
 <div align="center">
-<img src="pics/wiki-spaceflights-2.png" height=250>
-<img src="pics/wiki-spaceflights-3.png" height=250>
-<br>
-<img src="pics/wiki-spaceflights-4.png" width=300>
+<img src="pics/wiki-fifa-table.png" width=600>
+</div>
+]
+
+
+---
+# Scraping HTML tables: example
+
+.pull-left-small2[
+- We are going to scrape a small table from the Wikipedia page [List_of_FIFA_World_Cup_finals](https://en.wikipedia.org/wiki/List_of_FIFA_World_Cup_finals).
+- (We're actually using a pinned revision from October 2026, accessible [here](https://en.wikipedia.org/w/index.php?title=List_of_FIFA_World_Cup_finals&oldid=1378907506). Wikipedia pages change, this revision won't.)
+- The table is not entirely clean: The score column mixes numbers with symbols and footnote markers, and there are flag icons, links, and a references column.
+- The HTML code looks straightforward though: a `<table>` with one `<tr>` per final.
+]
+
+.pull-right-wide2[
+<div align="center">
+<img src="pics/wiki-fifa-table-sourcecode.png" width=600>
 </div>
 ]
 
@@ -432,22 +355,57 @@ html_table(x,
 
 ```{r, eval = FALSE}
 library(rvest)
-url <- "https://en.wikipedia.org/wiki/List_of_human_spaceflights"
+url <- "https://en.wikipedia.org/wiki/List_of_FIFA_World_Cup_finals"
 url_p <- read_html(url)
-tables <- html_table(url_p, header = TRUE)
-spaceflights <- tables[[1]]
-spaceflights
+# Wikipedia's data tables carry the class "wikitable"; the first one here is a one-row legend
+tables <- url_p |> html_elements("table.wikitable") |> html_table(header = TRUE)
+fifa_finals <- tables[[2]]
+head(fifa_finals)
 ```
 
 
 ```{r, eval = TRUE, echo = FALSE}
 library(rvest)
-url <- "https://en.wikipedia.org/w/index.php?title=List_of_human_spaceflights&oldid=778165808"
+url <- "https://en.wikipedia.org/w/index.php?title=List_of_FIFA_World_Cup_finals&oldid=1378907506"
 url_p <- read_html(url)
-tables <- html_table(url_p, header = TRUE)
-spaceflights <- tables[[1]]
-spaceflights
+tables <- url_p |> html_elements("table.wikitable") |> html_table(header = TRUE)
+fifa_finals <- tables[[2]]
+head(fifa_finals)
 ```
+
+.font80[Which table is the right one you have to find out by inspecting the page or the output of `html_table()`. The cleanup (scores, attendance, footnote markers) is part of the live coding session; see `materials/fifa-world-cup-finals.R`.]
+
+
+
+---
+# Websites have braced against being scraped
+
+.pull-left.font80[
+### What used to work
+
+- For years, point-and-click helpers such as [SelectorGadget](https://selectorgadget.com/) (a bookmarklet/browser extension that generates XPath or CSS selectors from the elements you click) made scraping static pages a breeze.
+- Many of the examples I used in this course a few years ago were built that way. **Most of them don't return anything anymore.**
+
+### What changed
+
+- **Auto-generated class names.** Front-end frameworks (React, styled-components, Tailwind, ...) create hashed classes like `erslblw0` at build time. They carry no meaning and change with every redeployment. Selectors built on them break within weeks.
+- **Content Security Policies (CSP).** Sites now restrict which scripts may run on their pages. Bookmarklets and injected helper scripts are blocked, so tools like SelectorGadget often cannot even start.
+- **JavaScript-rendered content.** The HTML the server sends is often an empty shell. The content is loaded and rendered client-side, so `read_html()` sees nothing.
+- **Anti-bot infrastructure.** Rate limits, bot-detection challenges (e.g., Cloudflare), logins, and paywalls.
+]
+
+.pull-right.font80[
+### Why this is partly on purpose
+
+- Hashed class names are a side effect of modern tooling. Content has become valuable (not least as AI training data) and site owners guard it.
+
+### Lessons learned
+
+- **Writing XPath by hand is still a relevant skill.** Prefer selectors that rest on the semantics of the page (element names, structure, `id`s, readable classes such as `.teaser__headline`, `data-*` attributes) over generated class names. The browser's developer tools are your friend; CSP does not block them.
+- **Expect your scrapers to break.** Pin the page version you worked with (e.g., Wikipedia's `oldid`), store raw HTML locally, and let your code fail loudly when a selector returns nothing.
+- **Look for the data behind the page.** JavaScript-rendered content usually comes from an API the page calls in the background (watch the `Network` tab). That API is often easier to tap than the page itself (more on APIs in a minute).
+]
+
 
 
 ---
@@ -486,7 +444,7 @@ name: goodpractice
 - Documents which bot is allowed to crawl which resources (and which not)
 - Not a technical barrier, but a sign that asks for compliance
 
-### What's robots.txt?
+### How is it structured?
 
 - Not an official W3C standard
 - Rules listed bot by bot
@@ -554,7 +512,7 @@ Crawl-delay: 2
 ### Looping over a list of URLs
 
 ```{r, eval = FALSE}
-for (i in 1:length(list_of_urls)) { 
+for (i in seq_along(list_of_urls)) { 
   if (!file.exists(paste0(folder, file_names[i]))) {
     download.file(list_of_urls[i],
                   destfile = paste0(folder, file_names[i])
@@ -594,18 +552,16 @@ for (i in 1:length(list_of_urls)) {
 ```{r, eval = FALSE}
 url <- "http://a-totally-random-website.com"
 rvest_session <- session(url, 
- add_headers(From = "my@email.com", 
-             `UserAgent` = 
-               R.Version()$version.string
-             )
-) 
+ httr::add_headers(From = "my@email.com", 
+             `User-Agent` = 
+               R.Version()$version.string))
 headlines <- rvest_session |> 
              html_elements(xpath = "p//a") |> 
-             html_text()
+             html_text2()
 ```
 
 
-- `rvest`'s `session()` creates a session object that responds to HTTP and HTML methods.
+- `rvest`'s `session()` creates a session object that responds to HTTP and HTML methods. (Under the hood it uses the `httr` package, hence `httr::add_headers()`.)
 - Here, we provide our email address and the current R version as `User-Agent` information.
 - This will pop up in the server logs: The webpage administrator has the chance to easily get in touch with you.
 
@@ -614,11 +570,80 @@ headlines <- rvest_session |>
 
 
 ---
+# Scraping politely with the `polite` package
+
+.pull-left.font80[
+### Etiquette as code
+
+The [`polite` package](https://dmi3kno.github.io/polite/) by Dmytro Perepolkin bundles the good practices from the previous slides into three verbs:
+
+- `bow()`: Introduce yourself to the host. Declares your user agent, fetches and parses `robots.txt`, and checks whether you are allowed to scrape the path.
+- `nod()`: Switch to another path on the same host (re-checks permission).
+- `scrape()`: Fetch the page. Respects the crawl delay from `robots.txt` (default: 5 seconds), caches responses so that repeated calls don't hit the server again, and returns the parsed HTML for `rvest`.
+
+### Install
+
+The package is currently not on CRAN. Install it from GitHub:
+
+```{r, eval = FALSE}
+remotes::install_github("dmi3kno/polite")
+```
+
+<div align="center">
+<img src="pics/polite-logo.png" height=75>
+</div>
+]
+
+.pull-right.font80[
+### Example
+
+```{r, message = FALSE, warning = FALSE}
+library(polite)
+session <- bow(
+  "https://en.wikipedia.org/wiki/List_of_FIFA_World_Cup_finals",
+  user_agent = "IDS course (munzert@hertie-school.org)"
+)
+session
+```
+
+```{r, message = FALSE, warning = FALSE}
+url_p <- scrape(session)
+tables <- url_p |> html_elements("table.wikitable") |> html_table()
+tables[[2]] |> head(3) |> select(1:4)
+```
+]
+
+
+---
 # Scraping etiquette (cont.)
 
 <div align="center">
 <img src="pics/scraping-etiquette.png" height=540>
 </div>
+
+
+---
+# Scraping in the age of AI
+
+.pull-left.font80[
+### AI crawlers have changed the game
+
+- Training large language models requires huge amounts of web text. AI companies run crawlers (`GPTBot`, `ClaudeBot`, `Google-Extended`, ...) at a scale that dwarfs academic scraping.
+- Many websites now explicitly block these bots in their `robots.txt` (see the community-maintained [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) list), add anti-bot measures (Cloudflare challenges, rate limits), or move content behind logins.
+- Side effect for us: Scraping has become harder, and site owners are more suspicious of *any* automated traffic. Being polite and identifiable matters more than ever.
+- The legal debate (copyright, terms of use) is in flux. Research purposes are often privileged (e.g., [§ 60d UrhG](https://www.gesetze-im-internet.de/urhg/__60d.html) in Germany), but check before you publish data.
+]
+
+.pull-right.font80[
+### LLMs as scraping assistants
+
+- LLMs are good at writing XPath/CSS selectors and `rvest` code when you paste them a chunk of HTML. Use them to speed up the location and extraction steps.
+- They are also useful for the tidying step: turning messy, unstructured text into structured records (names, dates, amounts).
+- Beware though:
+  - Generated selectors are only as good as the HTML snippet you provided. Always test on the full page and on multiple pages.
+  - LLM-based extraction is non-deterministic and can hallucinate. Validate against ground truth, and prefer a deterministic parser whenever the structure allows it.
+  - Pasting scraped content into a third-party model may itself violate terms of use or data protection rules.
+]
 
 
 
@@ -643,13 +668,13 @@ name: apibasics
 
 - A web <b>A</b>pplication <b>P</b>rogramming <b>I</b>nterface lets you/your program query a provider for specific data.
 - Think of web APIs as "data search engines": You pose a request, the API answers with a bulk of data.
-- Many popular web services provide APIs (Google, Twitter, Wikipedia, ...).
+- Many popular web services provide APIs (Google, Wikipedia, OpenAlex, the Bundestag, ...).
 - Often, APIs provide data in JSON, XML (can be any format though).
 
 <div align="center">
 <img src="pics/Image_1.jpeg" height=150>
 </div>
-`Credit` [Brian Cooksey](https://zapier.com/learn/apis/chapter-1-introduction-to-apis/)
+`Credit` [Brian Cooksey](https://web.archive.org/web/2024/https://zapier.com/learn/apis/chapter-1-introduction-to-apis/)
 ]
 
 --
@@ -725,9 +750,8 @@ name: apibasics
 .pull-right-vsmall[
 <br>
 <div align="center">
-<img src="pics/Image_8.png" height=80><br>
-<img src="pics/Image_4.png" height=80><br>
-<img src="pics/Image_5.png" height=80><br>
+<img src="pics/image_4.png" height=80><br>
+<img src="pics/image_5.png" height=80><br>
 <img src="pics/wikimedia-foundation.png" height=80><br>
 <img src="pics/yt_1200.png" height=80><br>
 </div>
@@ -789,11 +813,11 @@ First, we specify the endpoint. We use the JSON endpoint and start with an empty
 endpoint <- "http://ip-api.com/json"
 ```
 
-Next, we call the API with `httr`'s `GET()` method. 
+Next, we build a request with `httr2`'s `request()` and send it with `req_perform()`. (The default method is `GET`.)
 
 ```{r}
-endpoint <- "http://ip-api.com/json"
-response <- httr::GET(endpoint)
+library(httr2)
+response <- request(endpoint) |> req_perform()
 response
 ```
 ]
@@ -801,11 +825,11 @@ response
 --
 
 .pull-right[
-Hooray, we successfully called the API and got JSON data in return! We inspect the content with `httr`'s `content()` function.
+Hooray, we successfully called the API and got JSON data in return! We extract the body with `resp_body_json()`.
 
 ```{r, R.options = list(width = 30)}
-response_parsed <- httr::content(response)
-response_parsed
+response_parsed <- resp_body_json(response)
+str(response_parsed)
 ```
 ]
 
@@ -814,9 +838,9 @@ response_parsed
 # Example: Calling the API with R *cont.*
 
 .pull-left[
-This looks like an R list, which is useful. `httr::content()` automatically parsed the JSON file into an R list, which is useful. We could have also kept the raw (here: text) content with `httr::content(as = "text")`.
+This looks like an R list, which is useful. `resp_body_json()` parsed the JSON response into an R list. We could have also kept the raw text with `resp_body_string()`.
 
-For more convenience (and flexibility), we can also use the powerful `jsonlite` package and its parser:
+For low-dimensional data like this, the `jsonlite` package can do the whole job (request + parse) in one go:
 
 ```{r}
 response_parsed <- jsonlite::fromJSON(endpoint)
@@ -851,13 +875,14 @@ response_parsed
 --
 
 .pull-right[
-The API also allows for batch processing. This gives you the ability to query multiple IP addresses in one HTTP request, which is significantly faster than submitting individual queries. To that end, the batch of IP addresses or domains must be sent using a `POST` request:
+The API also allows for batch processing. This gives you the ability to query multiple IP addresses in one HTTP request, which is significantly faster than submitting individual queries. To that end, the batch of IP addresses or domains must be sent using a `POST` request. With `httr2`, adding a JSON body via `req_body_json()` switches the method to `POST` automatically:
 
 ```{r}
 endpoint <- "http://ip-api.com/batch"
-response <- httr::POST(url = endpoint, body = 
-    '["208.80.152.201", "91.198.174.192"]', encode = "json")
-httr::content(response, as = "text") |> 
+response <- request(endpoint) |> 
+  req_body_json(list("208.80.152.201", "91.198.174.192")) |> 
+  req_perform()
+resp_body_string(response) |> 
   jsonlite::fromJSON() |> 
   as.data.frame()
 ```
@@ -902,7 +927,7 @@ httr::content(response, as = "text") |>
 The [`ipapi` package](https://github.com/hrbrmstr/ipapi) by Bob Rudis provides high-level access to the IP API. You just have to install it and can then work with the `geolocate()` function provided by the package to call the API.
 
 ```{r, message = FALSE, warning = FALSE}
-# devtools::install_github("hrbrmstr/ipapi") # uncomment to install if necessary
+# remotes::install_github("hrbrmstr/ipapi") # uncomment to install if necessary
 library(ipapi)
 ip_df <- geolocate(c("", "10.0.1.1", "www.spiegel.de"), .progress=TRUE)
 ip_df
@@ -930,7 +955,7 @@ ip_df
 # Restricted API access: example
 
 .pull-left[
-The *New York Times* provides several APIs for developers at [https://developer.nytimes.com/](https://developer.nytimes.com/). In order to use them, we have to register as a developer (for free) and register our app. Then, we can use that key to call one of the APIs.
+The *New York Times* provides several APIs for developers at [https://developer.nytimes.com/](https://developer.nytimes.com/). In order to use them, we have to register as a developer (for free) and register an app (here: `simons-ids-app`). The app gets assigned a key, which we can use to call one of the APIs. (Note: NYT deactivates keys that aren't used for a while, so don't be surprised if you have to regenerate it.)
 
 <div align="center">
 <img src="pics/nytimes-apis.png" width=500>
@@ -947,30 +972,30 @@ The *New York Times* provides several APIs for developers at [https://developer.
 ---
 # Restricted API access: example *cont.*
 
-First, we load the key that we stored separately as a string (here: `nytimes_apikey` stored in `rkeys.RDa`).
+First, we load the key that we stored separately as a string (here: `nytimes_apikey` stored in `rkeys.RDa`, outside the project folder).
 
 ```{r}
 load("/Users/s.munzert/rkeys.RDa")
 ``` 
 
-Next we specify the API endpoint using the API key:
+Next we build the request. The key is passed as a URL query parameter, which we add with `req_url_query()`:
 
 ```{r}
-endpoint <- "https://api.nytimes.com/svc/mostpopular/v2/viewed/1.json?"
-url <- paste0(endpoint, "api-key=", nytimes_apikey)
+endpoint <- "https://api.nytimes.com/svc/mostpopular/v2/viewed/1.json"
+req <- request(endpoint) |> req_url_query(`api-key` = nytimes_apikey)
 ```
 
 Finally, we call the API and inspect the results:
 
 ```{r}
-nytimes_most_popular <- jsonlite::fromJSON(url)
+nytimes_most_popular <- req |> req_perform() |> resp_body_json(simplifyVector = TRUE)
 nytimes_most_popular$results$title[1:3]
 ```
 
 ---
 # Restricted API access: some advice
 
-**NEVER** hard-code your personal API key (or any personal information for that matter) in R scripts that you plant to stare. 
+**NEVER** hard-code your personal API key (or any personal information for that matter) in R scripts that you plan to share. 
 
 Instead, use one of the following options:
 
@@ -987,7 +1012,7 @@ Sys.setenv(MY_API_KEY="abcdefghijklmnopqrstuvwxyz0123456789")
 my_api_key = Sys.getenv("MY_API_KEY")
 ```
 
-The downside of this approach is that this environment variable will not persist across sessions. To make it persistent (on your system), you should modify the `.Renvion` file. Check out [these instructions](https://raw.githack.com/uo-ec607/lectures/master/07-web-apis/07-web-apis.html#Aside:_Safely_store_and_use_API_keys_as_environment_variables) to learn how that works.
+The downside of this approach is that this environment variable will not persist across sessions. To make it persistent (on your system), you should modify the `.Renviron` file (`usethis::edit_r_environ()` opens it for you). Check out [these instructions](https://raw.githack.com/uo-ec607/lectures/master/07-web-apis/07-web-apis.html#Aside:_Safely_store_and_use_API_keys_as_environment_variables) to learn how that works.
 
 
 
@@ -1005,11 +1030,11 @@ The downside of this approach is that this environment variable will not persist
 
   a. Dive into the documentation.
   
-  b. Use `httr` package to construct requests.
+  b. Use the `httr2` package to construct and perform requests (`request()`, `req_url_query()`, `req_body_json()`, `req_perform()`).
   
-  c. Use `jsonlite` package to parse the JSON response (or other parsers such as `xml2`, depending on API output).
+  c. Use `resp_body_json()` or the `jsonlite` package to parse the JSON response (or other parsers such as `xml2`, depending on API output).
   
-  d. Address API error handling, user agent, authentication, pagination issues. (See [here](https://httr.r-lib.org/articles/api-packages.html) for more info.)
+  d. Address API error handling, user agent, authentication, rate limiting, pagination issues. `httr2` has helpers for all of these (`req_retry()`, `req_user_agent()`, `req_auth_*()`, `req_throttle()`, `req_perform_iterative()`). See [here](https://httr2.r-lib.org/articles/wrapping-apis.html) for more info.
   
   e. Write useful high-level functions that wrap your API calls and parsing operations.
   
@@ -1155,17 +1180,6 @@ fromJSON(x)
 
 
 
-
----
-class: inverse, center, middle
-name: summary
-
-# Summary
-
-<html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
-
-
-
 ---
 # More on web scraping
 
@@ -1187,26 +1201,11 @@ Collecting data from the web using APIs provided by the data owner represents th
 
 On the other hand, the rise of API architectures is not without issues. It requires knowledge of the architecture and creates dependencies on API suppliers. While APIs have the potential to make data access more democratic, they can also add to the siloing of information.
 
-If you want to learn more about APIs in depth, check out [this introduction to APIs](https://zapier.com/learn/apis/chapter-1-introduction-to-apis/). Or, check out this [hands-on intro video to APIs in R by Leo Glowacki](https://www.youtube.com/watch?v=kZU240u9H3E&t=2248s).
+There are many resources that give an overview of existing public APIs, including this [List of public APIs on GitHub](https://github.com/public-apis/public-apis). Another useful resource is [APIs for social scientists - a collaborative review](https://paulcbauer.github.io/apis_for_social_scientists_a_review/).
 
-There are many resources that give an overview of existing public APIs, including this [List of public APIs on GitHub](https://github.com/public-apis/public-apis). Another useful resource is [APIs for social scientists - a collaborative review](https://bookdown.org/paul/apis_for_social_scientists/).
-
-Finally, if you plan to write an R client for a web API, check out [this guide](https://httr.r-lib.org/articles/api-packages.html).
+Finally, if you plan to write an R client for a web API, check out [this guide](https://httr2.r-lib.org/articles/wrapping-apis.html).
 
 
 
----
-
-# Coming up
-
-<br><br> 
-
-### Assignment
-
-Assignment 2 is about to go online. Check it out and start scraping the web (politely).
-
-### Next lecture
-
-Databases! Bring coffee.
 
 
