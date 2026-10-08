@@ -74,7 +74,7 @@ resp |> resp_body_json()       # body parsed into an R list
 resp |> resp_body_json() |> as_tibble()
 
 # Shortcut: jsonlite does request + parsing in one go
-fromJSON(endpoint)
+jsonlite::fromJSON(endpoint) |> as_tibble()
 
 # Same data as XML, if you must
 request("http://ip-api.com/xml") |>

@@ -384,7 +384,7 @@ head(fifa_finals)
 ### What used to work
 
 - For years, point-and-click helpers such as [SelectorGadget](https://selectorgadget.com/) (a bookmarklet/browser extension that generates XPath or CSS selectors from the elements you click) made scraping static pages a breeze.
-- Many of the examples I used in this course a few years ago were built that way. **Most of them don't return anything anymore.**
+- Many of the examples I used in this course a few years ago were built that way. Most of them don't return anything anymore.
 
 ### What changed
 
@@ -395,10 +395,6 @@ head(fifa_finals)
 ]
 
 .pull-right.font80[
-### Why this is partly on purpose
-
-- Hashed class names are a side effect of modern tooling. Content has become valuable (not least as AI training data) and site owners guard it.
-
 ### Lessons learned
 
 - **Writing XPath by hand is still a relevant skill.** Prefer selectors that rest on the semantics of the page (element names, structure, `id`s, readable classes such as `.teaser__headline`, `data-*` attributes) over generated class names. The browser's developer tools are your friend; CSP does not block them.

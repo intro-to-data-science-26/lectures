@@ -395,7 +395,7 @@ R&gt; head(fifa_finals)
 ### What used to work
 
 - For years, point-and-click helpers such as [SelectorGadget](https://selectorgadget.com/) (a bookmarklet/browser extension that generates XPath or CSS selectors from the elements you click) made scraping static pages a breeze.
-- Many of the examples I used in this course a few years ago were built that way. **Most of them don't return anything anymore.**
+- Many of the examples I used in this course a few years ago were built that way. Most of them don't return anything anymore.
 
 ### What changed
 
@@ -406,10 +406,6 @@ R&gt; head(fifa_finals)
 ]
 
 .pull-right.font80[
-### Why this is partly on purpose
-
-- Hashed class names are a side effect of modern tooling. Content has become valuable (not least as AI training data) and site owners guard it.
-
 ### Lessons learned
 
 - **Writing XPath by hand is still a relevant skill.** Prefer selectors that rest on the semantics of the page (element names, structure, `id`s, readable classes such as `.teaser__headline`, `data-*` attributes) over generated class names. The browser's developer tools are your friend; CSP does not block them.
@@ -865,7 +861,7 @@ R&gt; response
 ## GET http://ip-api.com/json
 ## Status: 200 OK
 ## Content-Type: application/json
-## Body: In memory (404 bytes)
+## Body: In memory (309 bytes)
 ```
 ]
 
@@ -885,17 +881,17 @@ R&gt; str(response_parsed)
 ##  $ status     : chr "success"
 ##  $ country    : chr "Germany"
 ##  $ countryCode: chr "DE"
-##  $ region     : chr "BE"
-##  $ regionName : chr "State of Berlin"
-##  $ city       : chr "Berlin"
-##  $ zip        : chr "10117"
-##  $ lat        : num 52.5
-##  $ lon        : num 13.4
+##  $ region     : chr "SN"
+##  $ regionName : chr "Saxony"
+##  $ city       : chr "Leipzig"
+##  $ zip        : chr "04135"
+##  $ lat        : num 51.3
+##  $ lon        : num 12.4
 ##  $ timezone   : chr "Europe/Berlin"
-##  $ isp        : chr "Verein zur Foerderung eines Deutschen Forschungsnetzes e.V."
-##  $ org        : chr "Hertie School of Governance gGmbH, Berlin"
-##  $ as         : chr "AS680 Verein zur Foerderung eines Deutschen Forschungsnetzes e.V."
-##  $ query      : chr "195.37.184.82"
+##  $ isp        : chr "1&amp;1 Versatel Deutschland GmbH"
+##  $ org        : chr "VT-DYNAMICPOOL 5G"
+##  $ as         : chr "AS8881 1&amp;1 Versatel GmbH"
+##  $ query      : chr "61.8.146.39"
 ```
 ]
 
@@ -925,37 +921,37 @@ R&gt; response_parsed
 ## [1] "DE"
 ## 
 ## $region
-## [1] "BE"
+## [1] "SN"
 ## 
 ## $regionName
-## [1] "State of Berlin"
+## [1] "Saxony"
 ## 
 ## $city
-## [1] "Berlin"
+## [1] "Leipzig"
 ## 
 ## $zip
-## [1] "10117"
+## [1] "04135"
 ## 
 ## $lat
-## [1] 52.5125
+## [1] 51.3396
 ## 
 ## $lon
-## [1] 13.3893
+## [1] 12.3713
 ## 
 ## $timezone
 ## [1] "Europe/Berlin"
 ## 
 ## $isp
-## [1] "Verein zur Foerderung eines Deutschen Forschungsnetzes e.V."
+## [1] "1&amp;1 Versatel Deutschland GmbH"
 ## 
 ## $org
-## [1] "Hertie School of Governance gGmbH, Berlin"
+## [1] "VT-DYNAMICPOOL 5G"
 ## 
 ## $as
-## [1] "AS680 Verein zur Foerderung eines Deutschen Forschungsnetzes e.V."
+## [1] "AS8881 1&amp;1 Versatel GmbH"
 ## 
 ## $query
-## [1] "195.37.184.82"
+## [1] "61.8.146.39"
 ```
 ]
 
@@ -973,20 +969,20 @@ R&gt; as.data.frame(response_parsed)
 ```
 ##    status country countryCode
 ## 1 success Germany          DE
-##   region      regionName
-## 1     BE State of Berlin
-##     city   zip     lat
-## 1 Berlin 10117 52.5125
-##       lon      timezone
-## 1 13.3893 Europe/Berlin
-##                                                           isp
-## 1 Verein zur Foerderung eines Deutschen Forschungsnetzes e.V.
-##                                         org
-## 1 Hertie School of Governance gGmbH, Berlin
-##                                                                  as
-## 1 AS680 Verein zur Foerderung eines Deutschen Forschungsnetzes e.V.
-##           query
-## 1 195.37.184.82
+##   region regionName    city
+## 1     SN     Saxony Leipzig
+##     zip     lat     lon
+## 1 04135 51.3396 12.3713
+##        timezone
+## 1 Europe/Berlin
+##                             isp
+## 1 1&amp;1 Versatel Deutschland GmbH
+##                 org
+## 1 VT-DYNAMICPOOL 5G
+##                         as
+## 1 AS8881 1&amp;1 Versatel GmbH
+##         query
+## 1 61.8.146.39
 ```
 ]
 
@@ -1124,36 +1120,21 @@ R&gt; ip_df
 ```
 
 ```
-##     status country countryCode region      regionName              city    zip
-##     &lt;char&gt;  &lt;char&gt;      &lt;char&gt; &lt;char&gt;          &lt;char&gt;            &lt;char&gt; &lt;char&gt;
-## 1: success Germany          DE     BE State of Berlin            Berlin  10117
-## 2:    fail    &lt;NA&gt;        &lt;NA&gt;   &lt;NA&gt;            &lt;NA&gt;              &lt;NA&gt;   &lt;NA&gt;
-## 3: success Germany          DE     HE           Hesse Frankfurt am Main  60314
-##        lat      lon      timezone
-##      &lt;num&gt;    &lt;num&gt;        &lt;char&gt;
-## 1: 52.5125 13.38930 Europe/Berlin
-## 2:      NA       NA          &lt;NA&gt;
-## 3: 50.1124  8.71858 Europe/Berlin
-##                                                            isp
-##                                                         &lt;char&gt;
-## 1: Verein zur Foerderung eines Deutschen Forschungsnetzes e.V.
-## 2:                                                        &lt;NA&gt;
-## 3:                                                 Link11 GmbH
-##                                          org
-##                                       &lt;char&gt;
-## 1: Hertie School of Governance gGmbH, Berlin
-## 2:                                      &lt;NA&gt;
-## 3:                          IP via link11.de
-##                                                                   as
-##                                                               &lt;char&gt;
-## 1: AS680 Verein zur Foerderung eines Deutschen Forschungsnetzes e.V.
-## 2:                                                              &lt;NA&gt;
-## 3:                                               AS34309 Link11 GmbH
-##             query
-##            &lt;char&gt;
-## 1:  195.37.184.82
-## 2:       10.0.1.1
-## 3: 128.65.223.150
+##     status country countryCode region regionName              city    zip
+##     &lt;char&gt;  &lt;char&gt;      &lt;char&gt; &lt;char&gt;     &lt;char&gt;            &lt;char&gt; &lt;char&gt;
+## 1: success Germany          DE     SN     Saxony           Leipzig  04135
+## 2:    fail    &lt;NA&gt;        &lt;NA&gt;   &lt;NA&gt;       &lt;NA&gt;              &lt;NA&gt;   &lt;NA&gt;
+## 3: success Germany          DE     HE      Hesse Frankfurt am Main  60314
+##        lat      lon      timezone                           isp
+##      &lt;num&gt;    &lt;num&gt;        &lt;char&gt;                        &lt;char&gt;
+## 1: 51.3396 12.37130 Europe/Berlin 1&amp;1 Versatel Deutschland GmbH
+## 2:      NA       NA          &lt;NA&gt;                          &lt;NA&gt;
+## 3: 50.1124  8.71858 Europe/Berlin                   Link11 GmbH
+##                  org                       as          query
+##               &lt;char&gt;                   &lt;char&gt;         &lt;char&gt;
+## 1: VT-DYNAMICPOOL 5G AS8881 1&amp;1 Versatel GmbH    61.8.146.39
+## 2:              &lt;NA&gt;                     &lt;NA&gt;       10.0.1.1
+## 3:  IP via link11.de      AS34309 Link11 GmbH 128.65.223.150
 ```
 
 
@@ -1219,9 +1200,9 @@ R&gt; nytimes_most_popular$results$title[1:3]
 ```
 
 ```
-## [1] "California Prepares to Ban Quartz Countertop Production"                
-## [2] "What, Exactly, Did Trump Say About Iran Taking Out Los Angeles?"        
-## [3] "How to Destroy a Reputation in Hollywood, as Told in 5 Women’s Lawsuits"
+## [1] "California Prepares to Ban Quartz Countertop Production"        
+## [2] "What, Exactly, Did Trump Say About Iran Taking Out Los Angeles?"
+## [3] "Ukraine Claws Back Land in the Donbas, Thwarting a Russian Push"
 ```
 
 ---

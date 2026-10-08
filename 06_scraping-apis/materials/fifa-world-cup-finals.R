@@ -67,8 +67,7 @@ finals <- finals_raw |>
     goals_winner    = score_clean |> str_extract("^\\d+") |> parse_number(),
     goals_runner_up = score_clean |> str_extract("\\d+$") |> parse_number(),
     attendance  = parse_number(attendance)
-  ) |>
-  select(-score_clean)
+  )
 
 finals
 glimpse(finals)
