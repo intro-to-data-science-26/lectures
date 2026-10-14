@@ -67,7 +67,7 @@ library(tidyverse)
 
 5. [Talking to databases with R](#dbr)
 
-7. [Summary](#summary)
+6. [Summary](#summary)
 
 
 
@@ -82,7 +82,7 @@ name: whydb
 
 ---
 
-# The ubiqity of multi-dimensional data structures
+# The ubiquity of multi-dimensional data structures
 
 .pull-left[
 ### From data frames...
@@ -106,7 +106,7 @@ name: whydb
 
 ---
 
-# The ubiqity of multi-dimensional data structures
+# The ubiquity of multi-dimensional data structures
 
 .pull-left-center[
 <div align="center">
@@ -132,7 +132,7 @@ name: whydb
 
 ---
 
-# The ubiqity of multi-dimensional data structures
+# The ubiquity of multi-dimensional data structures
 
 .pull-left-center[
 <div align="center">
@@ -745,7 +745,7 @@ left_join(flights, planes) |>
 Note that `dplyr` made a reasonable guess about which columns to join on (i.e. columns that share the same name). It also told us its choices: 
 
 ```
-*### Joining, by = c("year", "tailnum")
+*### Joining with `by = join_by(year, tailnum)`
 ```
 
 However, there's an obvious problem here: the variable "year" does not have a consistent meaning across our joining datasets!
@@ -763,6 +763,7 @@ Luckily, there's an easy way to avoid this problem.
 
 
 You just need to be more explicit in your join call by using the `by = ` argument.
+- Recent `dplyr` versions also offer `by = join_by(tailnum)`, which does the same thing but additionally allows for keys with different names (`join_by(tailnum == tail_number)`) and inequality joins.
 - You can also rename any ambiguous columns to avoid confusion. 
 ```{r join2}
 left_join(
@@ -812,12 +813,16 @@ If you're lucky, keys are unique. But that's not always the case. There are two 
 --
 
 <ol start="2">
-  <li>Both tables have duplicate keys. This is usually an error because in neither table do the keys uniquely identify an observation. When joining duplicated keys, we get all possible combinations (the Cartesian product, a many-to-many relationship):</li>
+  <li>Both tables have duplicate keys. This is usually an error because in neither table do the keys uniquely identify an observation. When joining duplicated keys, we get all possible combinations (a many-to-many relationship):</li>
 </ol>
   
 <div align="center">
 <img src="pics/join-many-to-many.png" height=140>
 </div>
+
+--
+
+Since version 1.1.0, `dplyr` warns you about an "unexpected many-to-many relationship". If this is what you intended, set `relationship = "many-to-many"` to silence the warning.
 
 
 
@@ -1012,7 +1017,6 @@ name: dbr
 
 .pull-right-small[
 
-<br>
 <div align="center">
 <img src="pics/mysql-logo.png" height=120>
 <img src="pics/postgresql-logo.png" height=150>
@@ -1343,23 +1347,5 @@ background-color: #000000
 
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <p style="background-color:black;color:white;"><b>... but awesomely useful and not going away.</b></p>
-
-
-
-
----
-
-# Coming up
-
-<br><br> 
-
-### Assignment
-
-None! But you'll get the chance to practice databasing with R in the lab.
-
-
-### Next lecture
-
-Let's finally do something useful with data!
 
 

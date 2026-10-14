@@ -37,12 +37,17 @@ url_p |>
 tables <- url_p |> html_elements("table.wikitable") |> html_table()
 finals_raw <- tables[[2]]
 
+
 # Option B (more robust): select the table by its caption via XPath
 finals_raw <- url_p |>
   html_element(xpath = "//table[caption[contains(., 'List of FIFA World Cup finals')]]") |>
   html_table()
 
 finals_raw
+
+# Option C
+rvest::read_html("https://en.wikipedia.org/wiki/List_of_FIFA_World_Cup_finals") |> rvest::html_table() |> _[[4]]
+
 
 
 # 3. Clean up ------------------------------------------------------

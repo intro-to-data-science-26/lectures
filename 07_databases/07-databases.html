@@ -58,7 +58,7 @@ class: center, middle, inverse, title-slide
 
 5. [Talking to databases with R](#dbr)
 
-7. [Summary](#summary)
+6. [Summary](#summary)
 
 
 
@@ -73,7 +73,7 @@ name: whydb
 
 ---
 
-# The ubiqity of multi-dimensional data structures
+# The ubiquity of multi-dimensional data structures
 
 .pull-left[
 ### From data frames...
@@ -97,7 +97,7 @@ name: whydb
 
 ---
 
-# The ubiqity of multi-dimensional data structures
+# The ubiquity of multi-dimensional data structures
 
 .pull-left-center[
 &lt;div align="center"&gt;
@@ -123,7 +123,7 @@ name: whydb
 
 ---
 
-# The ubiqity of multi-dimensional data structures
+# The ubiquity of multi-dimensional data structures
 
 .pull-left-center[
 &lt;div align="center"&gt;
@@ -815,7 +815,7 @@ Let's perform a [left join](https://stat545.com/bit001_dplyr-cheatsheet.html#lef
 
 
 ``` r
-R&gt; left_join(flights, planes) %&gt;%
+R&gt; left_join(flights, planes) |&gt;
 +   select(year, month, day, dep_time, arr_time, carrier, flight, tailnum, type, model)
 ```
 
@@ -847,7 +847,7 @@ R&gt; left_join(flights, planes) %&gt;%
 Note that `dplyr` made a reasonable guess about which columns to join on (i.e. columns that share the same name). It also told us its choices: 
 
 ```
-*### Joining, by = c("year", "tailnum")
+*### Joining with `by = join_by(year, tailnum)`
 ```
 
 However, there's an obvious problem here: the variable "year" does not have a consistent meaning across our joining datasets!
@@ -865,15 +865,16 @@ Luckily, there's an easy way to avoid this problem.
 
 
 You just need to be more explicit in your join call by using the `by = ` argument.
+- Recent `dplyr` versions also offer `by = join_by(tailnum)`, which does the same thing but additionally allows for keys with different names (`join_by(tailnum == tail_number)`) and inequality joins.
 - You can also rename any ambiguous columns to avoid confusion. 
 
 ``` r
 R&gt; left_join(
 +   flights,
-+   planes %&gt;% rename(year_built = year), ### Not necessary w/ below line, but helpful
++   planes |&gt; rename(year_built = year), ### Not necessary w/ below line, but helpful
 +   by = "tailnum" ### Be specific about the joining column
-+   ) %&gt;%
-+   select(year, month, day, dep_time, arr_time, carrier, flight, tailnum, year_built, type, model) %&gt;%
++   ) |&gt;
++   select(year, month, day, dep_time, arr_time, carrier, flight, tailnum, year_built, type, model) |&gt;
 +   head(3) ### Just to save vertical space on the slide
 ```
 
@@ -899,8 +900,8 @@ R&gt; left_join(
 +   flights,
 +   planes, ### Not renaming "year" to "year_built" this time
 +   by = "tailnum"
-+   ) %&gt;%
-+   select(contains("year"), month, day, dep_time, arr_time, carrier, flight, tailnum, type, model) %&gt;%
++   ) |&gt;
++   select(contains("year"), month, day, dep_time, arr_time, carrier, flight, tailnum, type, model) |&gt;
 +   head(3)
 ```
 
@@ -935,12 +936,16 @@ If you're lucky, keys are unique. But that's not always the case. There are two 
 --
 
 &lt;ol start="2"&gt;
-  &lt;li&gt;Both tables have duplicate keys. This is usually an error because in neither table do the keys uniquely identify an observation. When joining duplicated keys, we get all possible combinations (the Cartesian product, a many-to-many relationship):&lt;/li&gt;
+  &lt;li&gt;Both tables have duplicate keys. This is usually an error because in neither table do the keys uniquely identify an observation. When joining duplicated keys, we get all possible combinations (a many-to-many relationship):&lt;/li&gt;
 &lt;/ol&gt;
   
 &lt;div align="center"&gt;
 &lt;img src="pics/join-many-to-many.png" height=140&gt;
 &lt;/div&gt;
+
+--
+
+Since version 1.1.0, `dplyr` warns you about an "unexpected many-to-many relationship". If this is what you intended, set `relationship = "many-to-many"` to silence the warning.
 
 
 
@@ -1135,7 +1140,6 @@ name: dbr
 
 .pull-right-small[
 
-&lt;br&gt;
 &lt;div align="center"&gt;
 &lt;img src="pics/mysql-logo.png" height=120&gt;
 &lt;img src="pics/postgresql-logo.png" height=150&gt;
@@ -1315,7 +1319,7 @@ Note that `flights_db` is a remote source; the table is not stored in our local 
 
 
 ``` r
-R&gt; flights_db %&gt;% select(year:day, dep_delay, arr_delay) %&gt;% head(3)
+R&gt; flights_db |&gt; select(year:day, dep_delay, arr_delay) |&gt; head(3)
 ```
 
 ```
@@ -1342,13 +1346,13 @@ This even applies when you assign the output of a database query to an object:
 
 
 ``` r
-R&gt; tailnum_delay_db &lt;- flights_db %&gt;% 
-+   group_by(tailnum) %&gt;%
+R&gt; tailnum_delay_db &lt;- flights_db |&gt; 
++   group_by(tailnum) |&gt;
 +   summarise(
 +     delay = mean(arr_delay),
 +     n = n()
-+   ) %&gt;% 
-+   arrange(desc(delay)) %&gt;%
++   ) |&gt; 
++   arrange(desc(delay)) |&gt;
 +   filter(n &gt; 100)
 ```
 
@@ -1382,7 +1386,7 @@ If you then want to pull the data into a local data frame, use `dplyr::collect()
 
 
 ``` r
-R&gt; tailnum_delay &lt;- tailnum_delay_db %&gt;% collect()
+R&gt; tailnum_delay &lt;- tailnum_delay_db |&gt; collect()
 R&gt; tailnum_delay
 ```
 
@@ -1413,7 +1417,7 @@ You can use the `show_query()` function to display the SQL code that was used to
 
 
 ``` r
-R&gt; tailnum_delay_db %&gt;% show_query()
+R&gt; tailnum_delay_db |&gt; show_query()
 ```
 
 ```
@@ -1540,24 +1544,6 @@ background-color: #000000
 
 &lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
 &lt;p style="background-color:black;color:white;"&gt;&lt;b&gt;... but awesomely useful and not going away.&lt;/b&gt;&lt;/p&gt;
-
-
-
-
----
-
-# Coming up
-
-&lt;br&gt;&lt;br&gt; 
-
-### Assignment
-
-None! But you'll get the chance to practice databasing with R in the lab.
-
-
-### Next lecture
-
-Let's finally do something useful with data!
 
 
     </textarea>
