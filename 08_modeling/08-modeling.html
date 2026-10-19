@@ -48,16 +48,13 @@ class: center, middle, inverse, title-slide
 
 &lt;br&gt;&lt;br&gt;
 
-1. [Crafting formulas](#formulas)
+1. [Running models](#models)
 
-2. [Running models](#models)
+2. [Modeling with tidymodels](#tidymodels)
 
-3. [Processing estimation output](#postestimation)
+3. [Reporting modeling results](#reporting)
 
-4. [Reporting modeling results](#reporting)
-
-5. [Summary](#summary)
-
+4. [Bonus: Fitting many models](#manymodels)
 
 
 
@@ -104,326 +101,6 @@ background-color: #000000
 &lt;!-- ############################################ --&gt;
 ---
 class: inverse, center, middle
-name: formulas
-
-# Crafting formulas
-
-&lt;html&gt;&lt;div style='float:left'&gt;&lt;/div&gt;&lt;hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/&gt;&lt;/html&gt;
-
-
-
-
----
-background-image: url("pics/albert-einstein-lm.png")
-background-size: contain
-background-color: #000000
-
-# Crafting formulas
-
-
----
-# Model building
-
-### Systematic + stochastic components of models
-
-- When we try to model data, we often start by assuming a data-generating process that looks like
-
-`$$Y = f(x) + \epsilon$$`
-
-- In doing so, we decompose a model (or data-generating process) into a random or stochastic part (here: `\(\epsilon\)`) and a systematic/structural/deterministic part (here: `\(f(x)\)`).
-- (We might go on to impose further assumptions about the stochastic component, e.g., `\(\epsilon \sim N(0, \sigma^2)\)`.)
-
-- In many cases, we want to learn how certain variables systematically relate to each other. To that end, we specify the systematic component of a model and then "let the data speak" to estimate parameters associated with elements of the systematic component.
-- As an example, we might specify
-
-`$$f(x) = \beta_{0} + \beta_{1}x$$`
-
-- But how can we express our belief about the model structure in R?
-
-
----
-# Model building in R
-
-### Model formulas in R
-
-- In R, there's a standardized way to specify models like this: working with the `formula` class.
-- In many cases you can still think of the model formula as just a string specifying the structural part of your model (there are exceptions).
-- But `formula` class objects also allow you to do more useful things with formula.
-- The basic structure of a formula is the tilde symbol (~) and at least one independent (righthand) variable. In most (but not all) situations, a single dependent (lefthand) variable is also needed. Thus we can construct a formula quite simply by just typing:
-
-
-``` r
-R&gt; y ~ x
-```
-
-- Spaces in formulas are not important, but I recommend using them to make the formulas more readable. 
-- Running a model with a formula is straightforward. Note that we don't even have to put the formula in parentheses - it is automatically interpreted as one formula expression when provided as the first argument:
-
-
-``` r
-R&gt; lm(arr_delay ~ distance + origin, data = flights)
-```
-
----
-# Model formulas in R (cont.)
-
-### Storing formulas 
-
-- A more explicit way is to write the formula as string and then use `as.formula()` to turn it into a formula object. This implies that we can store formulas as an R object and check its class.
-
-
-``` r
-R&gt; fmla &lt;- as.formula("arr_delay ~ distance + origin")
-R&gt; class(fmla)
-```
-
-```
-   [1] "formula"
-```
-
-- Next, we'd pass on the `formula` object to the model function, e.g.:
-
-
-``` r
-R&gt; lm(fmla, data = flights)
-```
-
-```
-   
-   Call:
-   lm(formula = fmla, data = flights)
-   
-   Coefficients:
-   (Intercept)     distance    originJFK    originLGA  
-     13.414049    -0.004045    -2.704255    -4.456169
-```
-
----
-# Formula syntax: basics
-
-- We can use multiple independent variables by simply separating them with the plus (+) symbol:
-
-
-``` r
-R&gt; y ~ x1 + x2
-```
-
-- If we use a minus (-) symbol, objects in the formula are ignored in an analysis:
-
-
-``` r
-R&gt; y ~ x1 - x2
-```
-
-- We can also use this to drop the intercept:
-
-
-``` r
-R&gt; y ~ x1 - x2 - 1
-```
-
-- The `.` operator refers to all other variables in the matrix/data frame not yet included in the model. This is useful when you plan to run a regression on all variables in a matrix/data frame:
-
-
-``` r
-R&gt; y ~ .
-```
-
----
-# Formula syntax: interactions
-
-In a regression modeling context, we often need to specify interaction terms. There are two ways to do this. If we want to include two variables and their interaction, we use the star/asterisk (`*`) symbol:
-
-
-``` r
-R&gt; y ~ x1 * x2
-```
-
-That's equivalent to
-
-
-``` r
-R&gt; y ~ x1 + x2 + x1*x2
-```
-
-If you only want their interaction, but not the variables themselves as main effects (which you probably don't want), use the colon symbol:
-
-
-``` r
-R&gt; y ~ x1:x2
-```
-
----
-# Formula syntax: variable transformations
-
-One trick to formulas is that they don't evaluate their contents. So, for example, if we wanted to include `\(x\)` and `\(x^2\)` in our model, we might be tempted to type:
-
-
-``` r
-R&gt; y ~ x + x^2
-```
-
-This won't work though. We therefore have to either calculate and store all of the variables we want to include in the model in advance, or we need to use the `I()` "as-is" operator, short for "Inhibit Interpretation/Conversion of Objects". In a formula function, `I()` is used to inhibit the interpretation of operators such as `+`, `-`, `*` and `^` as formula operators, so they are used as arithmetical operators. To obtain our desired two-term formula, we type:
-
-
-``` r
-R&gt; y ~ x + I(x^2)
-```
-
-Again, the alternative would have been something like:
-
-
-``` r
-R&gt; data$x2 &lt;- (data$x)^2
-R&gt; y ~ x + x2
-```
-
-
----
-# Specifying multiple models
-
-### When one model is not enough
-
-- Often we want to specify not one but multiple different models.
-- Such models can differ in terms of model family, modelled outcome, covariate/feature set, transformations of input variables, and data being modelled.
-
-### Generating model formulas at scale
-
-- If outcomes/features vary across models, so does the model formula.
-- Regarding formulas as character strings, it's straightforward to generate them in a programmatic fashion.
-
---
-
-**Example:**
-
-
-``` r
-R&gt; xvars &lt;- paste0("x", 1:20)
-R&gt; fmla &lt;- as.formula(paste("y ~ ", paste(xvars, collapse= "+")))
-R&gt; fmla
-```
-
-```
-   y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + 
-       x12 + x13 + x14 + x15 + x16 + x17 + x18 + x19 + x20
-```
-
----
-# Specifying multiple models (cont.)
-
-- Another example of multiple model specification is [extreme bounds analysis (EBA)](https://en.wikipedia.org/wiki/Extreme_bounds_analysis).
-- Here, the idea is to compute all possible estimates given a set of allowed coefficients to answer questions like:
-  - Which determinants are robustly associated with the dependent variable across a large number of possible regression models?
-  - Is a particular determinant robustly associated with the dependent variable?
-- In its basic form, EBA just estimates models with all possible combinations of variables and then looks into the distribution (or range → extreme bounds) of effects across all models.
-- There are R packages to do this for us (e.g., `ExtremeBounds` [by Marek Hlavac](https://cran.r-project.org/web/packages/ExtremeBounds/vignettes/ExtremeBounds.pdf)) but we can also run the basics on our own.
-
---
-
-### Example
-
-**Step 1: Define dependent variable and covariate set**
-
-
-``` r
-R&gt; depvar &lt;- "arr_delay"
-R&gt; covars &lt;- c("dep_delay", "carrier", "origin", "air_time", "distance", "hour")
-```
-
----
-# Specifying multiple models (cont.)
-
-**Step 1a (just for fun): Compute the number of unique combinations of all these covariates**
-
-
-``` r
-R&gt; combinations &lt;- 
-+   map(1:6, function(x) {combn(1:6, x)}) %&gt;% # create all possible combinations (draw 1 to 6 out of 6)
-+   map(ncol) %&gt;% # extract number of combinations
-+   unlist() %&gt;% # pull out of list structure
-+   sum() # compute sum
-R&gt; combinations
-```
-
-```
-   [1] 63
-```
-
-
----
-# Specifying multiple models (cont.)
-
-**Step 2: Build function to run lm models across set of all possible variable combinations **
-
-
-``` r
-R&gt; combn_models &lt;- function(depvar, covars, data)
-+ {
-+   combn_list &lt;- list()
-+   # generate list of covariate combinations
-+   for (i in seq_along(covars)) {
-+     combn_list[[i]] &lt;- combn(covars, i, simplify = FALSE)
-+   }
-+   combn_list &lt;- unlist(combn_list, recursive = FALSE)
-+   # function to generate formulas
-+   gen_formula &lt;- function(covars, depvar) {
-+     form &lt;- as.formula(paste0(depvar, " ~ ", paste0(covars, collapse = "+")))
-+     form
-+   }
-+   # generate formulas
-+   formulas_list &lt;- purrr::map(combn_list, gen_formula, depvar = depvar)
-+   # run models
-+   models_list &lt;- purrr::map(formulas_list, lm, data = data)
-+   models_list
-+ }
-```
-
-
----
-# Specifying multiple models (cont.)
-
-**Step 3: Run models (careful, this'll generate a quite heavy list)**
-
-
-
-
-``` r
-R&gt; models_list &lt;- combn_models(depvar = depvar,  covars = covars, data = flights)
-```
-
-How many models did we fit?
-
-
-``` r
-R&gt; length(models_list)
-```
-
-```
-   [1] 63
-```
-
-And what did we get? A glimpse at the first list element:
-
-
-``` r
-R&gt; models_list[[1]]
-```
-
-```
-   
-   Call:
-   .f(formula = .x[[i]], data = ..1)
-   
-   Coefficients:
-   (Intercept)    dep_delay  
-        -6.250        1.014
-```
-
-
-
-&lt;!-- ############################################ --&gt;
----
-class: inverse, center, middle
 name: models
 
 # Running models
@@ -432,7 +109,7 @@ name: models
 
 
 ---
-background-image: url("pics/turing-bombe.jpeg")
+background-image: url("pics/albert-einstein-lm.png")
 background-size: contain
 background-color: #000000
 
@@ -440,201 +117,199 @@ background-color: #000000
 
 
 ---
-# Model families
+# Model building
 
-Today we'll mostly focus on linear models as an example. However, there is a multitude of families of statistical models that allow extending linear models. Examples are
+.pull-left-wide[
 
-- **Generalized linear models** [`stats::glm()`], which extend linear models to include non-continuous responses (e.g., binary or categorical data, counts) 
-- **Generalized additive models** [`mgcv::gam()`], which extend generalized linear models to incorporate arbitrary smooth functions
-- **Penalized linear models** [`glmnet::glmnet()`], which introduce terms that penalize complex models to make models that generalize better to new datasets
+### Systematic + stochastic components of models
 
---
+- We often start by assuming a data-generating process of the form
 
-Also there is so much more to learn in terms of [modeling/machine learning/AI](https://en.wikipedia.org/wiki/Machine_learning). There are many (MANY!) models for measurement, (un-)supervised learning, clustering, dimensionality reduction, ... R is uniquely flexible for implementing these models. To get a quick glance at the universe from afar, check out the [CRAN Task Views](https://cran.r-project.org/web/views/), a curated online directory of topics and the R packages relevant for tasks related to these.
+`$$Y = f(x) + \epsilon$$`
 
+- This decomposes the model into a **systematic** (structural, deterministic) part, `\(f(x)\)`, and a **stochastic** (random) part, `\(\epsilon\)`.
+- `\(f(x)\)` captures what we think we can explain. `\(\epsilon\)` collects everything else: unmeasured influences, measurement error, genuine randomness.
+- We usually impose further assumptions on `\(\epsilon\)`, e.g., `\(\epsilon \sim N(0, \sigma^2)\)`: errors are centered at zero (the model is right *on average*), have the same spread everywhere, and are independent of each other and of `\(x\)`. If they fail, estimates may still be fine, but uncertainty statements are off.
+- To learn how variables relate to each other, we specify the systematic component, e.g. `\(f(x) = \beta_{0} + \beta_{1}x\)`, and "let the data speak" to estimate its parameters. But how do we express this in R?
+]
 
----
-# Running models: examples
+.pull-right-small[
 
-Luckily, these models all work similarly from a programming experience - once you've mastered how to run linear models, you will find it easy to implement others. Understanding and applying them wisely is a different matter though.
-
-**Logistic regression**
-
-
-``` r
-R&gt; logit_out &lt;- stats::glm(am ~ cyl + hp + wt, data = mtcars, family = binomial)
-```
-
-**Generalized additive model regression**
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-2-1.png" alt="" width="90%" style="display: block; margin: auto;" /&gt;
+]
 
 
-``` r
-R&gt; gam_out &lt;- mgcv::gam(mpg ~ s(disp) + s(wt), data = mtcars)
-```
-
-**Penalized (here: lasso) regression**
-
-
-``` r
-R&gt; lasso_out &lt;- glmnet(as.matrix(mtcars[-1]), mtcars[,1], standardize = TRUE, alpha  = 1)
-```
-
-**Multilevel model with random intercepts**
-
-
-``` r
-R&gt; library(lme4)
-R&gt; ml_out &lt;- lmer(arr_delay ~ distance + origin + (1|carrier) + (1|tailnum), data = flights)
-```
 
 ---
-# Decisions in the modeling workflow
+# A running example: flight delays
+
 .pull-left[
 
-### Big data and the need for models
+We model the **arrival delay** of flights from NYC airports in 2013 (`nycflights13`), using a random sample of 5,000 flights:
 
-- In the early days of the big data hype, people were overly enthusiastic about its implications for modeling (see quote on the right).
-- This is falling for the inception that we can simply "let the data speak".
-- However, the data science workflow is a sequence of subjective decisions from start to finish, [with lots of researcher degrees of freedom](https://www.pnas.org/doi/suppl/10.1073/pnas.2203150119).
-- Think of all the weakly justified decisions regarding:
-  - data collection / selection
-  - measurement
-  - model choice
-  - model specification
-  - reporting
+
+``` r
+R&gt; set.seed(42)
+R&gt; fl &lt;- flights |&gt;
++   drop_na(arr_delay, dep_delay) |&gt;
++   slice_sample(n = 5000)
+```
+
+Candidate predictors: departure delay, distance, origin airport, carrier, ...
+
+The simplest model: arrival delay as a linear function of departure delay,
+
+`$$\text{arrival delay} = \beta_0 + \beta_1 \, \text{departure delay} + \epsilon$$`
+
+The line is the systematic part. The vertical scatter around it is the stochastic part.
 ]
 
 .pull-right[
 
-&lt;br&gt;&lt;br&gt;
 
-&lt;div style="background-color:rgba(0, 0, 0, 0.1)"&gt;
-"Scientists are trained to recognize that correlation is not causation, that no conclusions should be drawn simply on the basis of correlation between X and Y. (...) Once you have a model, you can connect the data sets with confidence. Data without a model is just noise. (...) There is now a better way. Petabytes allow us to say: "Correlation is enough." We can stop looking for models. We can analyze the data without hypotheses about what it might show."
-&lt;/div&gt;
+``` r
+R&gt; ggplot(fl, aes(dep_delay, arr_delay)) +
++   geom_point(alpha = .15) +
++   geom_smooth(method = "lm", se = FALSE) +
++   theme_minimal()
+```
 
- *Chris Anderson*, ["The End of Theory: The Data Deluge makes the Scientific Method Obsolete (2008, *Wired*)"](https://www.wired.com/2008/06/pb-theory/)
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-4-1.png" alt="" style="display: block; margin: auto;" /&gt;
 
+Full code, including some extra plots:
+
+[`materials/flight-delays-models.R`](materials/flight-delays-models.R)
 ]
 
 
 ---
-# Decisions in the modeling workflow
+# Model formulas in R
+
 .pull-left[
 
-### Big data and the need for models
+R has a standardized way to specify the systematic part of a model: the `formula` class. The tilde separates outcome (left) and predictors (right):
 
-- In the early days of the big data hype, people were overly enthusiastic about its implications for modeling (see quote on the right).
-- This is falling for the inception that we can simply "let the data speak".
-- However, the data science workflow is a sequence of subjective decisions from start to finish, with lots of researcher degrees of freedom.
-- Think of all the weakly justified decisions regarding:
-  - data collection / selection
-  - measurement
-  - model choice
-  - model specification
-  - reporting
-  
-**Question:** How do researchers usually deal with this?
+
+``` r
+R&gt; m1 &lt;- lm(arr_delay ~ dep_delay, data = fl)
+R&gt; coef(m1)
+```
+
+```
+   (Intercept)   dep_delay 
+     -5.737477    1.003872
+```
+
+Formulas are objects. They can be stored, inspected, and built from strings:
+
+
+``` r
+R&gt; fmla &lt;- as.formula("arr_delay ~ distance")
+R&gt; class(fmla)
+```
+
+```
+   [1] "formula"
+```
+
+``` r
+R&gt; m2 &lt;- lm(fmla, data = fl)
+```
 ]
 
 .pull-right[
 
-&lt;br&gt;&lt;br&gt;
+## Formula syntax cheat sheet
 
-&lt;div style="background-color:rgba(0, 0, 0, 0.1)"&gt;
-"Scientists are trained to recognize that correlation is not causation, that no conclusions should be drawn simply on the basis of correlation between X and Y. (...) Once you have a model, you can connect the data sets with confidence. Data without a model is just noise. (...) There is now a better way. Petabytes allow us to say: "Correlation is enough." We can stop looking for models. We can analyze the data without hypotheses about what it might show."
-&lt;/div&gt;
-
- *Chris Anderson*, ["The End of Theory: The Data Deluge makes the Scientific Method Obsolete (2008, *Wired*)"](https://www.wired.com/2008/06/pb-theory/)
-
-]
-
-
-
-
----
-# Nested models
-
-.pull-left-center[
-&lt;div align="center"&gt;
-&lt;img src="pics/nested-models-chen.png" width=500&gt;
-&lt;/div&gt;
-`Credit` Chen 2010, [The Effect of Electoral Geography on Pork Barreling in Bicameral Legislatures](https://www.jstor.org/stable/25652208)
-]
-
-.pull-right-center[
-&lt;div align="center"&gt;
-&lt;br&gt;&lt;br&gt;
-&lt;img src="pics/nested-models-park.png" width=600&gt;
-&lt;/div&gt;
-`Credit` Park et al. 2009, [Being immersed in social networking environment: Facebook groups, uses and gratifications, and social outcomes](https://pubmed.ncbi.nlm.nih.gov/19619037/)
+| Formula | Meaning |
+|---|---|
+| `y ~ x1 + x2` | two predictors |
+| `y ~ x1 - 1` | drop the intercept |
+| `y ~ .` | all other columns as predictors |
+| `y ~ x1 * x2` | main effects and interaction (`x1 + x2 + x1:x2`) |
+| `y ~ x1:x2` | interaction only |
+| `y ~ x + I(x^2)` | arithmetic inside `I()` (note: `y ~ x + x^2` does not work) |
+| `y ~ log(x)` | function of a variable |
 ]
 
 
 ---
-# Exploring the model space
+# Interactions
 
 .pull-left[
 
-- **Another idea:** run not an arbitrary (small) set of models but as many (plausible ones) as possible to get an idea how much conclusions change depending on arbitrary data wrangling and modeling choices (the "model distribution").
-- There are various related procedures and labels used in different subfields to promote this idea, including:
-  - Multiverse analysis ([Steegen et al. 2016](https://journals.sagepub.com/doi/10.1177/1745691616658637))
-  - Specification curves ([Simonsohn et al. 2020](https://www.nature.com/articles/s41562-020-0912-z))
-  - Computational multimodel analysis ([Young and Holsteen 2015](http://fmwww.bc.edu/repec/bocode/m/Model_Uncertainty_and_Robustness.pdf))
-- Also check out critical perspective on "[Mülltiverse Analysis](http://www.the100.ci/2021/03/07/mulltiverse-analysis/)" (Julia Rohrer). The bottom line: Mindless multiversing doesn't give more robustness or insight.
+**Question:** Does the effect of a departure delay on the arrival delay differ by origin airport?
+
+An *additive* model gives each airport its own intercept but a common slope. An *interaction* lets the slope vary by airport:
+
+
+``` r
+R&gt; m_add &lt;- lm(arr_delay ~ dep_delay + origin,
++             data = fl)
+R&gt; m_int &lt;- lm(arr_delay ~ dep_delay * origin,
++             data = fl)
+R&gt; coef(m_int)[5:6] |&gt; round(3)
+```
+
+```
+   dep_delay:originJFK dep_delay:originLGA 
+                -0.007               0.003
+```
+
+`dep_delay:originJFK` is the difference in slope between JFK and EWR (the reference category). Here, the slopes are practically identical.
 ]
 
 .pull-right[
-&lt;div align="center"&gt;
-&lt;img src="pics/multiverse-analysis-1.png" width=500&gt;
-&lt;!--&lt;img src="pics/multimodel-analysis.png" width=230&gt;--&gt;
-&lt;/div&gt;
+
+
+``` r
+R&gt; ggplot(fl, aes(dep_delay, arr_delay,
++                color = origin)) +
++   geom_point(alpha = .1) +
++   geom_smooth(method = "lm", se = FALSE) +
++   coord_cartesian(xlim = c(-20, 200),
++                   ylim = c(-60, 250)) +
++   theme_minimal()
+```
+
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-8-1.png" alt="" style="display: block; margin: auto;" /&gt;
 ]
 
----
-# Specification curves
 
+---
+# Variable transformations
 
 .pull-left[
 
-- Specification curve analysis (SCA) facilitates the visual identification of the source of variation in results across multiple specifications.
-- The key feature, the specification curve, provides all gathered estimates sorted by effect size and highlighted by significance.
-- SCA is carried out in three main steps:
-  1. Define the set of reasonable specifications to estimate; 
-  2. Estimate all specifications and report the results in a descriptive specification curve; and 
-  3. Conduct joint statistical tests using an inferential specification curve.
-- As of now there are two R packages that offer high-level functions for specification: `specr` (see [here](https://masurp.github.io/specr/)) and `Multiverse` (see [here](https://mucollective.github.io/multiverse/)).
+Formulas don't evaluate arithmetic: in `arr_delay ~ distance^2`, the `^` is read as a formula operator, not as a square. Instead, wrap arithmetic in `I()` ("as is"), or use functions such as `log()`:
+
+
+``` r
+R&gt; m_lin  &lt;- lm(arr_delay ~ dep_delay + distance,
++              data = fl)
+R&gt; m_quad &lt;- lm(arr_delay ~ dep_delay + distance +
++                I(distance^2), data = fl)
+R&gt; m_log  &lt;- lm(arr_delay ~ dep_delay + log(distance),
++              data = fl)
+```
+
+Alternatively, compute the variable beforehand (`mutate(distance2 = distance^2)`) and use it in the formula.
 ]
 
 .pull-right[
-&lt;div align="center"&gt;
-&lt;br&gt;
-&lt;img src="pics/specification-curve-1.png" width=550&gt;
-&lt;br&gt;
-&lt;br&gt;
-&lt;img src="pics/specification-curve-2.png" width=550&gt;
-&lt;/div&gt;
+
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-10-1.png" alt="" style="display: block; margin: auto;" /&gt;
+
+The plot shows what the three specifications imply for a flight that left on time. We could also plot the predictions for a flight that left 60 minutes late, or for each origin airport. The point is: the systematic part of the model is a *hypothesis* about how the data are generated. We can visualize it and check whether it makes sense.
 ]
-
-
-
----
-# Specification curves (cont.)
-
-&lt;div align="center"&gt;
-&lt;img src="pics/specification-curve-3.png" width=850&gt;
-&lt;/div&gt;
-
-
-
-
 
 
 &lt;!-- ############################################ --&gt;
 ---
 class: inverse, center, middle
-name: postestimation
+name: tidymodels
 
-# Processing estimation output
+# Modeling with tidymodels
 
 &lt;html&gt;&lt;div style='float:left'&gt;&lt;/div&gt;&lt;hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/&gt;&lt;/html&gt;
 
@@ -644,788 +319,372 @@ background-image: url("pics/computer-nerd-mod.jpg")
 background-size: contain
 background-color: #000000
 
-# Processing estimation output
-
----
-# Why model processing?
-
-.pull-left-small2[
-When estimating a model, we usually estimate parameters (or simulate distributions thereof). There is, however, more that we can take away from the estimation, including:
-
-]
-
-.pull-right-wide2[
-
-
-``` r
-summary(model_out)
-
-Call:
-lm(formula = arr_delay ~ distance + origin, data = flights)
-
-Residuals:
-    Min      1Q  Median      3Q     Max 
- -89.04  -24.00  -11.83    7.26 1281.45 
-
-Coefficients:
-              Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept) 13.4140488  0.1748144   76.73   &lt;2e-16 ***
-distance    -0.0040451  0.0001097  -36.87   &lt;2e-16 ***
-originJFK   -2.7042552  0.1887083  -14.33   &lt;2e-16 ***
-originLGA   -4.4561694  0.1935123  -23.03   &lt;2e-16 ***
----
-Sig. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-
-Residual standard error: 44.51 on 327342 degrees of freedom
-(9430 observations deleted due to missingness)
-Multiple R-squared: 0.005503, Adjusted R-squared: 0.005493 
-F-statistic: 603.7 on 3 and 327342 DF,  p-value: &lt; 2.2e-16
-```
-
-]
+# Modeling with tidymodels
 
 
 ---
-# Why model processing?
-
-.pull-left-small2[
-When estimating a model, we usually estimate parameters (or simulate distributions thereof). There is, however, more that we can take away from the estimation, including:
-
-- **Estimated coefficients** and associated standard errors, T-statistics, p-values, confidence intervals
-]
-
-.pull-right-wide2[
-
-
-``` r
-summary(model_out)
-
-Call:
-lm(formula = arr_delay ~ distance + origin, data = flights)
-
-Residuals:
-    Min      1Q  Median      3Q     Max 
- -89.04  -24.00  -11.83    7.26 1281.45 
-
-*Coefficients:
-*             Estimate Std. Error t value Pr(&gt;|t|)
-*(Intercept) 13.4140488  0.1748144   76.73   &lt;2e-16 ***
-*distance    -0.0040451  0.0001097  -36.87   &lt;2e-16 ***
-*originJFK   -2.7042552  0.1887083  -14.33   &lt;2e-16 ***
-*originLGA   -4.4561694  0.1935123  -23.03   &lt;2e-16 ***
-*---
-*Sig. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-
-Residual standard error: 44.51 on 327342 degrees of freedom
-(9430 observations deleted due to missingness)
-Multiple R-squared: 0.005503, Adjusted R-squared: 0.005493 
-F-statistic: 603.7 on 3 and 327342 DF,  p-value: &lt; 2.2e-16
-```
-
-]
-
-
-
----
-# Why model processing?
-
-.pull-left-small2[
-When estimating a model, we usually estimate parameters (or simulate distributions thereof). There is, however, more that we can take away from the estimation, including:
-
-- **Estimated coefficients** and associated standard errors, T-statistics, p-values, confidence intervals
-- **Model summaries**, including goods of fit measures, information on model convergence, number of observations used
-]
-
-.pull-right-wide2[
-
-
-``` r
-summary(model_out)
-
-Call:
-lm(formula = arr_delay ~ distance + origin, data = flights)
-
-Residuals:
-    Min      1Q  Median      3Q     Max 
- -89.04  -24.00  -11.83    7.26 1281.45 
-
-Coefficients:
-              Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept) 13.4140488  0.1748144   76.73   &lt;2e-16 ***
-distance    -0.0040451  0.0001097  -36.87   &lt;2e-16 ***
-originJFK   -2.7042552  0.1887083  -14.33   &lt;2e-16 ***
-originLGA   -4.4561694  0.1935123  -23.03   &lt;2e-16 ***
----
-Sig. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-
-*Residual standard error: 44.51 on 327342 degrees of freedom
-*(9430 observations deleted due to missingness)
-*Multiple R-squared: 0.005503, Adjusted R-squared: 0.005493
-*F-statistic: 603.7 on 3 and 327342 DF,  p-value: &lt; 2.2e-16
-```
-
-]
-
-
-
----
-# Why model processing?
-
-.pull-left-small2[
-When estimating a model, we usually estimate parameters (or simulate distributions thereof). There is, however, more that we can take away from the estimation, including:
-
-- **Estimated coefficients** and associated standard errors, T-statistics, p-values, confidence intervals
-- **Model summaries**, including goods of fit measures, information on model convergence, number of observations used
-- **Observation-level information** that arises from the estimated model, such as fitted/predicted values, residuals, estimates of influence
-]
-
-.pull-right-wide2[
-
-
-``` r
-summary(model_out)
-
-Call:
-lm(formula = arr_delay ~ distance + origin, data = flights)
-
-*Residuals:
-*   Min      1Q  Median      3Q     Max
-*-89.04  -24.00  -11.83    7.26 1281.45
-
-Coefficients:
-              Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept) 13.4140488  0.1748144   76.73   &lt;2e-16 ***
-distance    -0.0040451  0.0001097  -36.87   &lt;2e-16 ***
-originJFK   -2.7042552  0.1887083  -14.33   &lt;2e-16 ***
-originLGA   -4.4561694  0.1935123  -23.03   &lt;2e-16 ***
----
-Sig. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-
-Residual standard error: 44.51 on 327342 degrees of freedom
-(9430 observations deleted due to missingness)
-Multiple R-squared: 0.005503, Adjusted R-squared: 0.005493 
-F-statistic: 603.7 on 3 and 327342 DF,  p-value: &lt; 2.2e-16
-```
-
-]
-
-
-
----
-# Processing estimation output in R
-
-.pull-left-small[
-
-- Fitting a model returns an object of a certain model class (here: `lm`).
-- Printing that object returns a quite minimalist set of information - just the input formula and coefficients.
-]
-
-.pull-right-wide[
-
-
-``` r
-R&gt; model_out &lt;- lm(arr_delay ~ distance + origin, data = flights)
-R&gt; class(model_out)
-```
-
-```
-   [1] "lm"
-```
-
-``` r
-R&gt; model_out
-```
-
-```
-   
-   Call:
-   lm(formula = arr_delay ~ distance + origin, data = flights)
-   
-   Coefficients:
-   (Intercept)     distance    originJFK    originLGA  
-     13.414049    -0.004045    -2.704255    -4.456169
-```
-]
-
----
-# Processing estimation output in R
-
-.pull-left-small[
-- Fitting a model returns an object of a certain model class (here: `lm`).
-- Printing that object returns a quite minimalist set of information - just the input formula and coefficients.
-- The anatomy of the object is considerably more complex. It comes as a list of various components, including the coefficients, residuals, fitted values, and original model input.
-]
-
-.pull-right-wide[
-
-
-``` r
-R&gt; names(model_out)
-```
-
-```
-    [1] "coefficients"  "residuals"     "effects"       "rank"         
-    [5] "fitted.values" "assign"        "qr"            "df.residual"  
-    [9] "na.action"     "contrasts"     "xlevels"       "call"         
-   [13] "terms"         "model"
-```
-]
-
-
----
-# Processing estimation output in R
-
-.pull-left-small[
-- Fitting a model returns an object of a certain model class (here: `lm`).
-- Printing that object returns a quite minimalist set of information - just the input formula and coefficients.
-- The anatomy of the object is considerably more complex. It comes as a list of various components, including the coefficients, residuals, fitted values, and original model input.
-- There's no way to print this list on the slide in full - it's just too long.
-]
-
-.pull-right-wide[
-
-
-``` r
-R&gt; str(model_out)
-```
-
-```
-   List of 14
-    $ coefficients : Named num [1:4] 13.41405 -0.00405 -2.70426 -4.45617
-     ..- attr(*, "names")= chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
-    $ residuals    : Named num [1:327346] 3.25 16.77 26.7 -22.33 -30.88 ...
-     ..- attr(*, "names")= chr [1:327346] "1" "2" "3" "4" ...
-    $ effects      : Named num [1:327346] -3945.1 1579.9 204.2 1025 -30.8 ...
-     ..- attr(*, "names")= chr [1:327346] "(Intercept)" "distance" "originJFK" "originLGA" ...
-    $ rank         : int 4
-    $ fitted.values: Named num [1:327346] 7.75 3.23 6.3 4.33 5.88 ...
-     ..- attr(*, "names")= chr [1:327346] "1" "2" "3" "4" ...
-    $ assign       : int [1:4] 0 1 2 2
-    $ qr           :List of 5
-     ..$ qr   : num [1:327346, 1:4] -5.72e+02 1.75e-03 1.75e-03 1.75e-03 1.75e-03 ...
-     .. ..- attr(*, "dimnames")=List of 2
-     .. .. ..$ : chr [1:327346] "1" "2" "3" "4" ...
-     .. .. ..$ : chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
-     .. ..- attr(*, "assign")= int [1:4] 0 1 2 2
-     .. ..- attr(*, "contrasts")=List of 1
-     .. .. ..$ origin: chr "contr.treatment"
-     ..$ qraux: num [1:4] 1 1 1 1
-     ..$ pivot: int [1:4] 1 2 3 4
-     ..$ tol  : num 1e-07
-     ..$ rank : int 4
-     ..- attr(*, "class")= chr "qr"
-    $ df.residual  : int 327342
-    $ na.action    : 'omit' Named int [1:9430] 472 478 616 644 726 734 755 839 840 841 ...
-     ..- attr(*, "names")= chr [1:9430] "472" "478" "616" "644" ...
-    $ contrasts    :List of 1
-     ..$ origin: chr "contr.treatment"
-    $ xlevels      :List of 1
-     ..$ origin: chr [1:3] "EWR" "JFK" "LGA"
-    $ call         : language lm(formula = arr_delay ~ distance + origin, data = flights)
-    $ terms        :Classes 'terms', 'formula'  language arr_delay ~ distance + origin
-     .. ..- attr(*, "variables")= language list(arr_delay, distance, origin)
-     .. ..- attr(*, "factors")= int [1:3, 1:2] 0 1 0 0 0 1
-     .. .. ..- attr(*, "dimnames")=List of 2
-     .. .. .. ..$ : chr [1:3] "arr_delay" "distance" "origin"
-     .. .. .. ..$ : chr [1:2] "distance" "origin"
-     .. ..- attr(*, "term.labels")= chr [1:2] "distance" "origin"
-     .. ..- attr(*, "order")= int [1:2] 1 1
-     .. ..- attr(*, "intercept")= int 1
-     .. ..- attr(*, "response")= int 1
-     .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; 
-     .. ..- attr(*, "predvars")= language list(arr_delay, distance, origin)
-     .. ..- attr(*, "dataClasses")= Named chr [1:3] "numeric" "numeric" "character"
-     .. .. ..- attr(*, "names")= chr [1:3] "arr_delay" "distance" "origin"
-    $ model        :'data.frame':	327346 obs. of  3 variables:
-     ..$ arr_delay: num [1:327346] 11 20 33 -18 -25 12 19 -14 -8 8 ...
-     ..$ distance : num [1:327346] 1400 1416 1089 1576 762 ...
-     ..$ origin   : chr [1:327346] "EWR" "LGA" "JFK" "JFK" ...
-     ..- attr(*, "terms")=Classes 'terms', 'formula'  language arr_delay ~ distance + origin
-     .. .. ..- attr(*, "variables")= language list(arr_delay, distance, origin)
-     .. .. ..- attr(*, "factors")= int [1:3, 1:2] 0 1 0 0 0 1
-     .. .. .. ..- attr(*, "dimnames")=List of 2
-     .. .. .. .. ..$ : chr [1:3] "arr_delay" "distance" "origin"
-     .. .. .. .. ..$ : chr [1:2] "distance" "origin"
-     .. .. ..- attr(*, "term.labels")= chr [1:2] "distance" "origin"
-     .. .. ..- attr(*, "order")= int [1:2] 1 1
-     .. .. ..- attr(*, "intercept")= int 1
-     .. .. ..- attr(*, "response")= int 1
-     .. .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; 
-     .. .. ..- attr(*, "predvars")= language list(arr_delay, distance, origin)
-     .. .. ..- attr(*, "dataClasses")= Named chr [1:3] "numeric" "numeric" "character"
-     .. .. .. ..- attr(*, "names")= chr [1:3] "arr_delay" "distance" "origin"
-     ..- attr(*, "na.action")= 'omit' Named int [1:9430] 472 478 616 644 726 734 755 839 840 841 ...
-     .. ..- attr(*, "names")= chr [1:9430] "472" "478" "616" "644" ...
-    - attr(*, "class")= chr "lm"
-```
-]
-
-
-
-
-
----
-# Processing estimation output in R
-
-.pull-left-small[
-
-- However, there are some high-level functions we can apply to do something useful with the model object, including:
-  - `coef()` to extract the coefficients
-]
-
-.pull-right-wide[
-
-
-``` r
-R&gt; coef(model_out)
-```
-
-```
-    (Intercept)     distance    originJFK    originLGA 
-   13.414048769 -0.004045067 -2.704255237 -4.456169356
-```
-]
-
-
----
-# Processing estimation output in R
-
-.pull-left-small[
-
-- However, there are some high-level functions we can apply to do something useful with the model object, including:
-  - `coef()` to extract the coefficients
-  - `fitted.values()` to extract the outcome values predicted by the model
-]
-
-.pull-right-wide[
-
-
-``` r
-R&gt; coef(model_out)
-```
-
-```
-    (Intercept)     distance    originJFK    originLGA 
-   13.414048769 -0.004045067 -2.704255237 -4.456169356
-```
-
-``` r
-R&gt; fitted.values(model_out)[1:5]
-```
-
-```
-          1        2        3        4        5 
-   7.750955 3.230064 6.304715 4.334768 5.875538
-```
-]
-
-
----
-# Processing estimation output in R
-
-.pull-left-small[
-
-- However, there are some high-level functions we can apply to do something useful with the model object, including:
-  - `coef()` to extract the coefficients
-  - `fitted.values()` to extract the outcome values predicted by the model
-  - `residuals()` to extract the residuals
-]
-
-.pull-right-wide[
-
-
-``` r
-R&gt; coef(model_out)
-```
-
-```
-    (Intercept)     distance    originJFK    originLGA 
-   13.414048769 -0.004045067 -2.704255237 -4.456169356
-```
-
-``` r
-R&gt; fitted.values(model_out)[1:5]
-```
-
-```
-          1        2        3        4        5 
-   7.750955 3.230064 6.304715 4.334768 5.875538
-```
-
-``` r
-R&gt; residuals(model_out)[1:5]
-```
-
-```
-            1          2          3          4          5 
-     3.249045  16.769936  26.695285 -22.334768 -30.875538
-```
-]
-
-
----
-# Processing estimation output in R
-
-.pull-left-small[
-
-- However, there are some high-level functions we can apply to do something useful with the model object, including:
-  - `coef()` to extract the coefficients
-  - `fitted.values()` to extract the outcome values predicted by the model
-  - `residuals()` to extract the residuals
-  - `model.matrix()` to extract the matrix of original input variables (predictors)
-]
-
-.pull-right-wide[
-
-
-``` r
-R&gt; coef(model_out)
-```
-
-```
-    (Intercept)     distance    originJFK    originLGA 
-   13.414048769 -0.004045067 -2.704255237 -4.456169356
-```
-
-``` r
-R&gt; fitted.values(model_out)[1:5]
-```
-
-```
-          1        2        3        4        5 
-   7.750955 3.230064 6.304715 4.334768 5.875538
-```
-
-``` r
-R&gt; residuals(model_out)[1:5]
-```
-
-```
-            1          2          3          4          5 
-     3.249045  16.769936  26.695285 -22.334768 -30.875538
-```
-
-``` r
-R&gt; model.matrix(model_out) %&gt;% head(4)
-```
-
-```
-     (Intercept) distance originJFK originLGA
-   1           1     1400         0         0
-   2           1     1416         0         1
-   3           1     1089         1         0
-   4           1     1576         1         0
-```
-]
-
-
-
----
-# Processing estimation output in R
-
-.pull-left-small[
-
-- To learn more about the estimated model, we can apply the `summary()` function.
-- The `summary` method is specific to the model class it is applied to (here: "`lm` "). To learn more, you'd have to call, e.g., `?summary.lm` or `?summary.glm`.
-
-]
-
-.pull-right-wide[
-
-
-``` r
-R&gt; summary(model_out)
-```
-
-```
-   
-   Call:
-   lm(formula = arr_delay ~ distance + origin, data = flights)
-   
-   Residuals:
-       Min      1Q  Median      3Q     Max 
-    -89.04  -24.00  -11.83    7.26 1281.45 
-   
-   Coefficients:
-                 Estimate Std. Error t value Pr(&gt;|t|)    
-   (Intercept) 13.4140488  0.1748144   76.73   &lt;2e-16 ***
-   distance    -0.0040451  0.0001097  -36.87   &lt;2e-16 ***
-   originJFK   -2.7042552  0.1887083  -14.33   &lt;2e-16 ***
-   originLGA   -4.4561694  0.1935123  -23.03   &lt;2e-16 ***
-   ---
-   Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-   
-   Residual standard error: 44.51 on 327342 degrees of freedom
-     (9430 observations deleted due to missingness)
-   Multiple R-squared:  0.005503,	Adjusted R-squared:  0.005493 
-   F-statistic: 603.7 on 3 and 327342 DF,  p-value: &lt; 2.2e-16
-```
-]
-
----
-# Processing estimation output in R
-
-.pull-left-small[
-
-- To learn more about the estimated model, we can apply the `summary()` function.
-- The `summary` method is specific to the model class it is applied to (here: "`lm` "). To learn more, you'd have to call, e.g., `?summary.lm` or `?summary.glm`.
-- The function creates more than a printed summary in the console. It returns an object of class `summary.lm`, which can be further dissected.
-]
-
-.pull-right-wide[
-
-
-``` r
-R&gt; class(summary(model_out))
-```
-
-```
-   [1] "summary.lm"
-```
-
-]
-
----
-# Processing estimation output in R
-
-.pull-left-small[
-
-- To learn more about the estimated model, we can apply the `summary()` function.
-- The `summary` method is specific to the model class it is applied to (here: "`lm` "). To learn more, you'd have to call, e.g., `?summary.lm` or `?summary.glm`.
-- The function creates more than a printed summary in the console. It returns an object of class `summary.lm`, which can be further dissected.
-- Again, there's no way to print this list on the slide in full - it's just too long.
-]
-
-.pull-right-wide[
-
-
-``` r
-R&gt; str(summary(model_out))
-```
-
-```
-   List of 12
-    $ call         : language lm(formula = arr_delay ~ distance + origin, data = flights)
-    $ terms        :Classes 'terms', 'formula'  language arr_delay ~ distance + origin
-     .. ..- attr(*, "variables")= language list(arr_delay, distance, origin)
-     .. ..- attr(*, "factors")= int [1:3, 1:2] 0 1 0 0 0 1
-     .. .. ..- attr(*, "dimnames")=List of 2
-     .. .. .. ..$ : chr [1:3] "arr_delay" "distance" "origin"
-     .. .. .. ..$ : chr [1:2] "distance" "origin"
-     .. ..- attr(*, "term.labels")= chr [1:2] "distance" "origin"
-     .. ..- attr(*, "order")= int [1:2] 1 1
-     .. ..- attr(*, "intercept")= int 1
-     .. ..- attr(*, "response")= int 1
-     .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; 
-     .. ..- attr(*, "predvars")= language list(arr_delay, distance, origin)
-     .. ..- attr(*, "dataClasses")= Named chr [1:3] "numeric" "numeric" "character"
-     .. .. ..- attr(*, "names")= chr [1:3] "arr_delay" "distance" "origin"
-    $ residuals    : Named num [1:327346] 3.25 16.77 26.7 -22.33 -30.88 ...
-     ..- attr(*, "names")= chr [1:327346] "1" "2" "3" "4" ...
-    $ coefficients : num [1:4, 1:4] 13.41405 -0.00405 -2.70426 -4.45617 0.17481 ...
-     ..- attr(*, "dimnames")=List of 2
-     .. ..$ : chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
-     .. ..$ : chr [1:4] "Estimate" "Std. Error" "t value" "Pr(&gt;|t|)"
-    $ aliased      : Named logi [1:4] FALSE FALSE FALSE FALSE
-     ..- attr(*, "names")= chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
-    $ sigma        : num 44.5
-    $ df           : int [1:3] 4 327342 4
-    $ r.squared    : num 0.0055
-    $ adj.r.squared: num 0.00549
-    $ fstatistic   : Named num [1:3] 604 3 327342
-     ..- attr(*, "names")= chr [1:3] "value" "numdf" "dendf"
-    $ cov.unscaled : num [1:4, 1:4] 1.54e-05 -6.47e-09 -7.18e-06 -1.03e-05 -6.47e-09 ...
-     ..- attr(*, "dimnames")=List of 2
-     .. ..$ : chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
-     .. ..$ : chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
-    $ na.action    : 'omit' Named int [1:9430] 472 478 616 644 726 734 755 839 840 841 ...
-     ..- attr(*, "names")= chr [1:9430] "472" "478" "616" "644" ...
-    - attr(*, "class")= chr "summary.lm"
-```
-
-]
-
-
-
-
----
-# Dissecting model objects
+# Beyond the linear model
 
 .pull-left[
 
-### The problem
+So far, we have used linear models. There is a multitude of model families extending them, e.g.:
 
-"While model inputs usually require tidy inputs, such attention to detail doesn’t carry over to model outputs. Outputs such as predictions and estimated coefficients aren’t always tidy. This makes it more difficult to combine results from multiple models. For example, in R, the default representation of model coefficients is not tidy because it does not have an explicit variable that records the variable name for each estimate, they are instead recorded as row names. (...) This knocks you out of the flow of analysis and makes it harder to combine the results from multiple models. I’m not currently aware of any packages that resolve this problem."
+- **Generalized linear models** [`stats::glm()`]: non-continuous responses (binary, counts)
+- **Generalized additive models** [`mgcv::gam()`]: arbitrary smooth functions of predictors
+- **Penalized models** [`glmnet::glmnet()`]: shrink coefficients to generalize better
+- **Multilevel models** [`lme4::lmer()`]: nested data, varying intercepts/slopes
+- **Trees and forests** [`rpart`, `ranger`], **boosting** [`xgboost`], **neural nets**, ...
 
- *Hadley Wickham*, ["Tidy Data"](https://www.jstatsoft.org/article/view/v059i10)
-
+For a glance at the universe from afar, see the [CRAN Task Views](https://cran.r-project.org/web/views/).
 ]
 
 .pull-right[
 
-### The solution?
+## Different modeling functions, different dialects
 
-See next slide!
 
+``` r
+R&gt; glm(late ~ dep_delay + distance, data = fl,
++     family = binomial)
+R&gt; mgcv::gam(arr_delay ~ s(dep_delay) + s(distance),
++           data = fl)
+R&gt; glmnet::glmnet(x = as.matrix(fl[, c("dep_delay", "distance")]),
++                y = fl$arr_delay, alpha = 1)
+R&gt; lme4::lmer(arr_delay ~ dep_delay + (1 | carrier),
++            data = fl)
+R&gt; ranger::ranger(arr_delay ~ dep_delay + distance,
++                data = fl, num.trees = 500)
+```
+
+Note the different inputs (formula vs. matrix), different argument names, different `predict()` behavior, different output objects.
+
+Switching models means rewriting code. Routine steps (splitting data, cross-validation, tuning) get re-implemented by hand, with ample room for mistakes.
 ]
 
 
-
 ---
-# Processing estimation output with broom
-
+# What is tidymodels?
 
 .pull-left-wide[
 
-`broom` is a suite of tools that summarizes key information about models. It takes the messy output of built-in functions in R, such as `lm` or `t.test`, and turns them into tidy `tibbles()` (think: dataframes). The output is not ready for publication but an important intermediary step that makes post-processing of estimation results more convenient. It is part of the [tidyverse](https://www.tidyverse.org/) and [tidymodels](https://www.tidymodels.org/).
+[tidymodels](https://www.tidymodels.org/) (developed by Max Kuhn and Julia Silge at Posit) is a collection of R packages for modeling and machine learning that share the design principles of the tidyverse: consistent interfaces, tidy data in and out, pipeable workflows.
 
-There are three key `broom` verbs that you need to learn.&lt;sup&gt;1&lt;/sup&gt;
-
-1. `tidy()`: Summarizes information about model components.
-
-2. `glance()`: Reports information about the entire model.
-
-3. `augment()`: Adds information about observations to a dataset.
-
+| Package | Purpose |
+|---|---|
+| `parsnip` | Specify models with one interface across engines |
+| `broom` | Turn model output into tidy tibbles |
+| `rsample` | Split and resample data |
+| `recipes` | Preprocess and engineer features |
+| `workflows` | Bundle preprocessing and model |
+| `yardstick` | Measure model performance |
+| `tune` / `dials` | Tune hyperparameters |
 ]
 
-.footnote[
-&lt;sup&gt;1&lt;/sup&gt; For a more detailed and comprehensive introduction, see the [official documentation at https://broom.tidymodels.org/](https://broom.tidymodels.org/).
-]
+.pull-right-small[
 
-.pull-right-small-center[
 &lt;div align="center"&gt;
 &lt;br&gt;
-&lt;img src="pics/broom.png" height=250&gt;
+&lt;img src="pics/broom.png" height=150&gt;
 &lt;/div&gt;
+
+&lt;br&gt;
+
+**Reading**
+
+- [tidymodels: Get Started](https://www.tidymodels.org/start/), articles 1–5
+- [Kuhn and Silge, *Tidy Modeling with R*](https://www.tmwr.org/)
+
 ]
 
----
-# Tidy model objects with tidy()
 
-`broom`'s `tidy()` function extracts the coefficient block (the model component) together with inferential statistics:
+---
+# Four ideas behind tidymodels
+
+.pull-left[
+### 1. Specify first, estimate later
+
+A model is first *specified* (type, engine, mode) and only then *fitted*. Specifications are reusable, and parameters can be left open for tuning.
+
+### 2. One interface for all models
+
+The same code fits an `lm`, a Stan model, or a random forest. `predict()` always returns a tibble with one row per input row.
+]
+
+.pull-right[
+### 3. Never let the test data leak
+
+Preprocessing that *learns* from data (centering, dummy coding, imputation) is estimated on training data only. The test set is touched at the very end.
+
+### 4. Integrate the test workflow
+
+Splitting, resampling, and tuning are all integrated in one workflow. 
+]
+
+Note that `tidymodels` is **not a modeling method.** You still need to know what a model does. And tidymodels is built for *predictive* modeling; for *inferential* work, base R plus `broom` are fine.
+
+We'll now look at the intuition behind each step and at a minimal example (check out the labs for details!).
 
 
 ``` r
-R&gt; broom::tidy(model_out, conf.int = TRUE, conf.level = 0.95)
+R&gt; library(tidymodels)
+R&gt; tidymodels_prefer() # resolve naming conflicts in favor of tidymodels
 ```
 
-```
-   # A tibble: 4 × 7
-     term        estimate std.error statistic   p.value conf.low conf.high
-     &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-   1 (Intercept) 13.4      0.175         76.7 0         13.1      13.8    
-   2 distance    -0.00405  0.000110     -36.9 5.53e-297 -0.00426  -0.00383
-   3 originJFK   -2.70     0.189        -14.3 1.46e- 46 -3.07     -2.33   
-   4 originLGA   -4.46     0.194        -23.0 3.04e-117 -4.84     -4.08
-```
-
---
-
-Here, we also extract the upper and lower bounds on the 95% confidence intervals for the estimates. What makes the function so convenient is the fact that the output comes as a tidy `tibble` with useful variable names.
-
-What exactly is extracted depends on the model type. You can learn more about the tidying function by typing `?tidy.[model class]`, e.g.: `?tidy.lm`.
-
----
-# Summarize model statistics with glance()
-
-`broom`'s `glance()` function extracts summary statistics of the model and provides them in a single-row `tibble`: 
-
-
-``` r
-R&gt; broom::glance(model_out)
-```
-
-```
-   # A tibble: 1 × 12
-     r.squared adj.r.squared sigma statistic p.value    df    logLik     AIC    BIC
-         &lt;dbl&gt;         &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;
-   1   0.00550       0.00549  44.5      604.       0     3 -1706997.  3.41e6 3.41e6
-   # ℹ 3 more variables: deviance &lt;dbl&gt;, df.residual &lt;int&gt;, nobs &lt;int&gt;
-```
 
 
 ---
-# Augment data with model information with augment()
+# Step 1: Build a model
 
-`broom`'s `augment()` function adds model information about each observation in a dataset, including, e.g.:
-  - predicted values (in the `.fitted` column)
-  - residuals (`.resid`)
-  - standard errors of fitted values (`.se.fit`; optional)
+.pull-left[
+### The idea
+
+- A model specification answers three questions: **type** (linear regression, random forest, ...), **engine** (which package does the estimation), **mode** (regression or classification).
+- The specification has not seen data. Only `fit()` with a formula and data estimates it.
+- Think `ggplot2`: declare what you want, then let the machinery produce it.
+- Swapping the engine (`set_engine("stan")`, `set_engine("glmnet")`) is a one-line change.
+- `broom` tidies the output (see later for details).
+]
+
+.pull-right[
 
 
 ``` r
-R&gt; broom::augment(model_out, se_fit = TRUE) %&gt;% head(3)
+R&gt; lm_mod &lt;- linear_reg() |&gt; set_engine("lm")
+R&gt; lm_fit &lt;- lm_mod |&gt;
++   fit(arr_delay ~ dep_delay + distance, data = fl)
+R&gt; tidy(lm_fit)
 ```
 
 ```
-   # A tibble: 3 × 11
-     .rownames arr_delay distance origin .fitted .se.fit .resid       .hat .sigma
-     &lt;chr&gt;         &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;      &lt;dbl&gt;  &lt;dbl&gt;
-   1 1                11     1400 EWR       7.75   0.135   3.25 0.00000922   44.5
-   2 2                20     1416 LGA       3.23   0.156  16.8  0.0000123    44.5
-   3 3                33     1089 JFK       6.30   0.136  26.7  0.00000938   44.5
-   # ℹ 2 more variables: .cooksd &lt;dbl&gt;, .std.resid &lt;dbl&gt;
+   # A tibble: 3 × 5
+     term        estimate std.error statistic  p.value
+     &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+   1 (Intercept) -3.10     0.447        -6.94 4.40e-12
+   2 dep_delay    1.00     0.00649     154.   0       
+   3 distance    -0.00248  0.000340     -7.31 3.15e-13
 ```
 
---
+``` r
+R&gt; predict(lm_fit, new_data = tibble(dep_delay = c(0, 60),
++                                   distance  = 1000))
+```
 
-It is also possible to pass on data that was not used during model fitting using the `newdata` argument. This requires that at least all predictor variable columns used to fit the model are present. Providing new data can be useful if one is interested to generate predictions for a test set.
+```
+   # A tibble: 2 × 1
+     .pred
+     &lt;dbl&gt;
+   1 -5.59
+   2 54.6
+```
+]
 
 
 ---
-# Unlocking the power of broom with multiple models
+# Step 2: Preprocess the data
 
-The true power of broom unfolds in settings where you want to combine results from multiple analyses (using subgroups of data, different models, bootstrap replicates of the original data frame, permutations, imputations, ...). 
+.pull-left[
+### The idea
 
---
+- Models rarely take raw data: dummy coding, transformations, feature extraction, missing values, rare categories.
+- Some of these steps *learn* from the data (a mean, the set of categories). If they learn from *all* data, test-set information leaks into training and evaluation becomes too optimistic.
+- **Split first.** Then write a **recipe**: a specification of preprocessing steps, estimated on the training data and applied unchanged to new data.
+- A **workflow** bundles recipe and model, so that fitting and predicting always use both together.
+]
 
-**Does this ring a bell?** Well, let's go back to our covariate selection sensitivity analysis. Recall that in **Steps 1 to 3**, we had specified and run 63 models. Let's evaluate the results now. First, extract the results in a tidy fashion:
+.pull-right[
 
---
-
-**Step 4 (continuing the analysis from above): Extract results from all models**
+Let's switch to a classification task: is a flight more than 30 minutes late? (20,000 sampled flights, 7 predictors.)
 
 
-``` r
-R&gt; models_broom &lt;- map(models_list, broom::tidy)
-R&gt; models_broom[[1]] # inspect one list entry
-```
-
-```
-   # A tibble: 2 × 5
-     term        estimate std.error statistic   p.value
-     &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
-   1 (Intercept)    -6.25   0.189       -33.1 2.63e-227
-   2 dep_delay       1.01   0.00437     232.  0
-```
-
-Next, let's merge them all into one data frame:
 
 
 ``` r
-R&gt; models_broom_df &lt;- map_dfr(models_broom, rbind)
+R&gt; flights_split &lt;- initial_split(flights_small,
++                                strata = late)
+R&gt; train_data &lt;- training(flights_split)
+R&gt; 
+R&gt; flights_rec &lt;- recipe(late ~ .,
++                       data = train_data) |&gt;
++   update_role(flight, time_hour, new_role = "ID") |&gt;
++   step_date(date, features = c("dow", "month"),
++             keep_original_cols = FALSE) |&gt;
++   step_other(all_nominal_predictors(),
++              threshold = 0.01) |&gt;
++   step_dummy(all_nominal_predictors()) |&gt;
++   step_zv(all_predictors())
+R&gt; 
+R&gt; lr_wf &lt;- workflow() |&gt;
++   add_model(logistic_reg() |&gt; set_engine("glm")) |&gt;
++   add_recipe(flights_rec)
 ```
+]
+
 
 ---
-# Unlocking the power of broom with multiple models
+# Step 3: Evaluate the model
 
-**Step 5: Summarize the estimates for subset of key predictors**
+
+
+.pull-left[
+### The idea
+
+- We want to know how a model performs on *new* data.
+- **Evaluating on the training data misleads:** flexible models can memorize it (the random forest on the right reaches an ROC AUC of 0.99 on its own training data).
+- **Evaluating repeatedly on the test set misleads, too:** the test set becomes part of model selection.
+- **Resampling:** create many splits *within the training set* (e.g., `\(v\)`-fold cross-validation), fit on one part, score on the other, average. Use the resampling estimates to compare models; keep the test set for one final check.
+- Choose the metric *before* looking at results. Accuracy can mislead with imbalanced outcomes (here, 84% of flights are on time).
+]
+
+.pull-right[
 
 
 ``` r
-R&gt; models_broom_df %&gt;% 
-+   filter(!str_detect(term, "Intercept|carrier")) %&gt;%
-+   ggplot(aes(estimate)) + 
-+   geom_histogram(binwidth = .1, color = "red") + 
-+   geom_vline(xintercept = 0, linetype="dashed") + 
-+   facet_grid(cols = vars(term), scales = "free_y") + 
-+   theme_minimal()
+R&gt; rf_mod &lt;- rand_forest(trees = 500) |&gt;
++   set_engine("ranger") |&gt;
++   set_mode("classification")
+R&gt; rf_wf &lt;- lr_wf |&gt; update_model(rf_mod)
+R&gt; 
+R&gt; set.seed(345)
+R&gt; folds &lt;- vfold_cv(train_data, v = 5)
+R&gt; metrics &lt;- metric_set(roc_auc)
+R&gt; rf_res &lt;- fit_resamples(rf_wf, folds,
++                         metrics = metrics)
+R&gt; lr_res &lt;- fit_resamples(lr_wf, folds,
++                         metrics = metrics)
+R&gt; bind_rows(rf = collect_metrics(rf_res),
++           logit = collect_metrics(lr_res),
++           .id = "model") |&gt;
++   select(model, mean, std_err)
 ```
 
-&lt;img src="08-modeling_files/figure-html/unnamed-chunk-47-1.png" alt="" style="display: block; margin: auto;" /&gt;
+```
+   # A tibble: 2 x 3
+     model  mean std_err
+     &lt;chr&gt; &lt;dbl&gt;   &lt;dbl&gt;
+   1 rf    0.769 0.00801
+   2 logit 0.749 0.00531
+```
+]
 
 
+---
+# Step 4: Tune the model
+
+.pull-left[
+### The idea
+
+- **Parameters** are learned from data (coefficients, split points). **Hyperparameters** must be set *before* training: the penalty in a lasso, the depth of a tree, the number of neighbors in `\(k\)`-NN.
+- They typically control complexity, i.e., the trade-off between underfitting and overfitting.
+- **Tuning:** mark hyperparameters with `tune()`, try a grid of candidates on the resamples, pick the best, plug it in, and fit *once* more on all training data. `last_fit()` then evaluates on the test set, the first and only time it is used.
+- If test-set and resampling results agree, the tuning did not overfit. Here, the test-set ROC AUC is close to the resampling estimate.
+]
+
+.pull-right[
+
+
+``` r
+R&gt; tree_mod &lt;-
++   decision_tree(cost_complexity = tune(),
++                 tree_depth = tune()) |&gt;
++   set_engine("rpart") |&gt; set_mode("classification")
+R&gt; tree_wf &lt;- lr_wf |&gt; update_model(tree_mod)
+R&gt; set.seed(567)
+R&gt; tree_res &lt;- tune_grid(tree_wf, folds, grid = 25,
++                       metrics = metrics)
+R&gt; best &lt;- select_best(tree_res,
++                     metric = "roc_auc")
+R&gt; final_fit &lt;- tree_wf |&gt;
++   finalize_workflow(best) |&gt;
++   last_fit(flights_split)
+R&gt; collect_metrics(final_fit) |&gt;
++   select(.metric, .estimate)
+```
+
+```
+   # A tibble: 3 x 2
+     .metric     .estimate
+     &lt;chr&gt;           &lt;dbl&gt;
+   1 accuracy        0.843
+   2 roc_auc         0.729
+   3 brier_class     0.120
+```
+]
+
+
+---
+# The whole workflow in one slide
+
+.pull-left[
+
+
+``` r
+# split
+flights_split &lt;- initial_split(flights_small)
+train_data &lt;- training(flights_split)
+folds &lt;- vfold_cv(train_data, v = 5)
+flights_rec &lt;- recipe(late ~ ., data = train_data) |&gt;
+  update_role(flight, time_hour, new_role = "ID") |&gt;
+  step_date(date, features = c("dow", "month")) |&gt;
+  step_other(all_nominal_predictors()) |&gt;
+  step_dummy(all_nominal_predictors()) |&gt;
+  step_zv(all_predictors())
+# build (with open hyperparameters)
+tree_spec &lt;- decision_tree(cost_complexity = tune(),
+                           tree_depth = tune()) |&gt;
+  set_engine("rpart") |&gt; set_mode("classification")
+tree_wf &lt;- workflow() |&gt;
+  add_model(tree_spec) |&gt; add_recipe(flights_rec)
+# tune, evaluate, last fit
+tree_res &lt;- tree_wf |&gt; tune_grid(folds, grid = 25)
+best &lt;- select_best(tree_res, metric = "roc_auc")
+final_fit &lt;- tree_wf |&gt; finalize_workflow(best) |&gt;
+  last_fit(flights_split)
+collect_metrics(final_fit)
+```
+]
+
+.pull-right[
+
+### Take it from there
+
+- To try another model: replace `tree_spec`. To try other features: edit the recipe. Everything downstream stays the same.
+- Article 5 of [Get Started](https://www.tidymodels.org/start/case-study/) runs this cycle on hotel bookings with a penalized logistic regression and a random forest, comparing them via ROC curves.
+- What we didn't cover: `workflowsets` (many model/recipe combinations at once), iterative tuning (`tune_bayes()`), ensembles (`stacks`). See [*Tidy Modeling with R*](https://www.tmwr.org/).
+]
+
+
+---
+# R vs. Python in predictive modeling
+
+.pull-left[
+
+### Why Python dominates in ML
+
+- MDS folks: Next semester, you'll mostly work in Python (ML; DS&amp;A).
+- Python is the default for ML applications: `scikit-learn` for classical ML, `PyTorch`/`JAX` for deep learning, the LLM stack (`transformers`, ...).
+- Stronger on the engineering side: deployment, GPUs, integration into software products.
+
+### Where R is strong (or weak)
+
+- Statistical modeling breadth: mixed and Bayesian models, GAMs, survey methods, causal inference.
+- Exploration and reporting: `tidyverse`, `ggplot2`, Quarto.
+- Classical ML is a wash: same C++ libraries under the hood. R clearly lags in deep learning and LLM tooling.
+]
+
+.pull-right[
+
+### Share concepts
+
+| Idea | tidymodels | scikit-learn |
+|---|---|---|
+| Split, resample | `rsample` | `KFold` |
+| Preprocess, no leakage | `recipes` | `Pipeline` |
+| One model interface | `parsnip` | estimator API |
+| Tune | `tune` | `GridSearchCV` |
+| Evaluate | `yardstick` | `sklearn.metrics` |
+
+Both frameworks exist because workflow best practices (split first, resample to compare, tune on resamples, test once) are easy to get wrong by hand.
+]
 
 
 &lt;!-- ############################################ --&gt;
@@ -1447,10 +706,9 @@ background-color: #000000
 
 
 
+
 ---
 # Reporting modeling results
-
-
 
 .pull-left[
 ### Why good reporting is as important as good modeling
@@ -1507,7 +765,7 @@ There are three key `modelsummary` verbs that you need to learn.&lt;sup&gt;1&lt;
 ---
 # Creating regression tables with modelsummary()
 
-.pull-left-small[
+.pull-left[
 
 - `modelsummary()` takes one or several models as input. Multiple models are provided as (optionally named) list.
 - The extraction of information (estimates, standard errors, model summaries etc.) is taken care of by the function.
@@ -1516,32 +774,33 @@ There are three key `modelsummary` verbs that you need to learn.&lt;sup&gt;1&lt;
 
 ]
 
-.pull-right-wide[
+.pull-right[
 
 
 
 
 ``` r
-R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
+R&gt; modelsummary(list(model1_out, model2_out, model3_out), 
++              output = "gt")
 ```
 
-<div id="tpwefkdqun" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#tpwefkdqun table {
+<div id="yxzpapeiut" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#yxzpapeiut table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#tpwefkdqun thead, #tpwefkdqun tbody, #tpwefkdqun tfoot, #tpwefkdqun tr, #tpwefkdqun td, #tpwefkdqun th {
+#yxzpapeiut thead, #yxzpapeiut tbody, #yxzpapeiut tfoot, #yxzpapeiut tr, #yxzpapeiut td, #yxzpapeiut th {
   border-style: none;
 }
 
-#tpwefkdqun p {
+#yxzpapeiut p {
   margin: 0;
   padding: 0;
 }
 
-#tpwefkdqun .gt_table {
+#yxzpapeiut .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1567,12 +826,12 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-left-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_caption {
+#yxzpapeiut .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#tpwefkdqun .gt_title {
+#yxzpapeiut .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1584,7 +843,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-bottom-width: 0;
 }
 
-#tpwefkdqun .gt_subtitle {
+#yxzpapeiut .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1596,7 +855,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-top-width: 0;
 }
 
-#tpwefkdqun .gt_heading {
+#yxzpapeiut .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1608,13 +867,13 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-right-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_bottom_border {
+#yxzpapeiut .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_col_headings {
+#yxzpapeiut .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1629,7 +888,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-right-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_col_heading {
+#yxzpapeiut .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1649,7 +908,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   overflow-x: hidden;
 }
 
-#tpwefkdqun .gt_column_spanner_outer {
+#yxzpapeiut .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1661,15 +920,15 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   padding-right: 4px;
 }
 
-#tpwefkdqun .gt_column_spanner_outer:first-child {
+#yxzpapeiut .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#tpwefkdqun .gt_column_spanner_outer:last-child {
+#yxzpapeiut .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#tpwefkdqun .gt_column_spanner {
+#yxzpapeiut .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1681,11 +940,11 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   width: 100%;
 }
 
-#tpwefkdqun .gt_spanner_row {
+#yxzpapeiut .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#tpwefkdqun .gt_group_heading {
+#yxzpapeiut .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1711,7 +970,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   text-align: left;
 }
 
-#tpwefkdqun .gt_empty_group_heading {
+#yxzpapeiut .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1726,15 +985,15 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   vertical-align: middle;
 }
 
-#tpwefkdqun .gt_from_md > :first-child {
+#yxzpapeiut .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#tpwefkdqun .gt_from_md > :last-child {
+#yxzpapeiut .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#tpwefkdqun .gt_row {
+#yxzpapeiut .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1753,7 +1012,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   overflow-x: hidden;
 }
 
-#tpwefkdqun .gt_stub {
+#yxzpapeiut .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1766,7 +1025,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   padding-right: 5px;
 }
 
-#tpwefkdqun .gt_stub_row_group {
+#yxzpapeiut .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1780,15 +1039,15 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   vertical-align: top;
 }
 
-#tpwefkdqun .gt_row_group_first td {
+#yxzpapeiut .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#tpwefkdqun .gt_row_group_first th {
+#yxzpapeiut .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#tpwefkdqun .gt_summary_row {
+#yxzpapeiut .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1798,16 +1057,16 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   padding-right: 5px;
 }
 
-#tpwefkdqun .gt_first_summary_row {
+#yxzpapeiut .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_first_summary_row.thick {
+#yxzpapeiut .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#tpwefkdqun .gt_last_summary_row {
+#yxzpapeiut .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1817,7 +1076,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-bottom-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_grand_summary_row {
+#yxzpapeiut .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1827,7 +1086,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   padding-right: 5px;
 }
 
-#tpwefkdqun .gt_first_grand_summary_row {
+#yxzpapeiut .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1837,7 +1096,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-top-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_last_grand_summary_row_top {
+#yxzpapeiut .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1847,11 +1106,11 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-bottom-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_striped {
+#yxzpapeiut .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#tpwefkdqun .gt_table_body {
+#yxzpapeiut .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1860,7 +1119,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-bottom-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_footnotes {
+#yxzpapeiut .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1874,7 +1133,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-right-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_footnote {
+#yxzpapeiut .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1883,7 +1142,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   padding-right: 5px;
 }
 
-#tpwefkdqun .gt_sourcenotes {
+#yxzpapeiut .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1897,7 +1156,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   border-right-color: #D3D3D3;
 }
 
-#tpwefkdqun .gt_sourcenote {
+#yxzpapeiut .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1905,72 +1164,72 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
   padding-right: 5px;
 }
 
-#tpwefkdqun .gt_left {
+#yxzpapeiut .gt_left {
   text-align: left;
 }
 
-#tpwefkdqun .gt_center {
+#yxzpapeiut .gt_center {
   text-align: center;
 }
 
-#tpwefkdqun .gt_right {
+#yxzpapeiut .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#tpwefkdqun .gt_font_normal {
+#yxzpapeiut .gt_font_normal {
   font-weight: normal;
 }
 
-#tpwefkdqun .gt_font_bold {
+#yxzpapeiut .gt_font_bold {
   font-weight: bold;
 }
 
-#tpwefkdqun .gt_font_italic {
+#yxzpapeiut .gt_font_italic {
   font-style: italic;
 }
 
-#tpwefkdqun .gt_super {
+#yxzpapeiut .gt_super {
   font-size: 65%;
 }
 
-#tpwefkdqun .gt_footnote_marks {
+#yxzpapeiut .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#tpwefkdqun .gt_asterisk {
+#yxzpapeiut .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#tpwefkdqun .gt_indent_1 {
+#yxzpapeiut .gt_indent_1 {
   text-indent: 5px;
 }
 
-#tpwefkdqun .gt_indent_2 {
+#yxzpapeiut .gt_indent_2 {
   text-indent: 10px;
 }
 
-#tpwefkdqun .gt_indent_3 {
+#yxzpapeiut .gt_indent_3 {
   text-indent: 15px;
 }
 
-#tpwefkdqun .gt_indent_4 {
+#yxzpapeiut .gt_indent_4 {
   text-indent: 20px;
 }
 
-#tpwefkdqun .gt_indent_5 {
+#yxzpapeiut .gt_indent_5 {
   text-indent: 25px;
 }
 
-#tpwefkdqun .katex-display {
+#yxzpapeiut .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#tpwefkdqun div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#yxzpapeiut div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2048,6 +1307,8 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out), output = "gt")
 ]
 
 ---
+exclude: true
+
 # Modifying regression tables
 
 .pull-left-vsmall[
@@ -2078,23 +1339,23 @@ R&gt; modelsummary(models,
 +              output = "gt") 
 ```
 
-<div id="xjtothvoon" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#xjtothvoon table {
+<div id="axmpcasent" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#axmpcasent table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#xjtothvoon thead, #xjtothvoon tbody, #xjtothvoon tfoot, #xjtothvoon tr, #xjtothvoon td, #xjtothvoon th {
+#axmpcasent thead, #axmpcasent tbody, #axmpcasent tfoot, #axmpcasent tr, #axmpcasent td, #axmpcasent th {
   border-style: none;
 }
 
-#xjtothvoon p {
+#axmpcasent p {
   margin: 0;
   padding: 0;
 }
 
-#xjtothvoon .gt_table {
+#axmpcasent .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -2120,12 +1381,12 @@ R&gt; modelsummary(models,
   border-left-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_caption {
+#axmpcasent .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#xjtothvoon .gt_title {
+#axmpcasent .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2137,7 +1398,7 @@ R&gt; modelsummary(models,
   border-bottom-width: 0;
 }
 
-#xjtothvoon .gt_subtitle {
+#axmpcasent .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2149,7 +1410,7 @@ R&gt; modelsummary(models,
   border-top-width: 0;
 }
 
-#xjtothvoon .gt_heading {
+#axmpcasent .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2161,13 +1422,13 @@ R&gt; modelsummary(models,
   border-right-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_bottom_border {
+#axmpcasent .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_col_headings {
+#axmpcasent .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2182,7 +1443,7 @@ R&gt; modelsummary(models,
   border-right-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_col_heading {
+#axmpcasent .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2202,7 +1463,7 @@ R&gt; modelsummary(models,
   overflow-x: hidden;
 }
 
-#xjtothvoon .gt_column_spanner_outer {
+#axmpcasent .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2214,15 +1475,15 @@ R&gt; modelsummary(models,
   padding-right: 4px;
 }
 
-#xjtothvoon .gt_column_spanner_outer:first-child {
+#axmpcasent .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#xjtothvoon .gt_column_spanner_outer:last-child {
+#axmpcasent .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#xjtothvoon .gt_column_spanner {
+#axmpcasent .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2234,11 +1495,11 @@ R&gt; modelsummary(models,
   width: 100%;
 }
 
-#xjtothvoon .gt_spanner_row {
+#axmpcasent .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#xjtothvoon .gt_group_heading {
+#axmpcasent .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2264,7 +1525,7 @@ R&gt; modelsummary(models,
   text-align: left;
 }
 
-#xjtothvoon .gt_empty_group_heading {
+#axmpcasent .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2279,15 +1540,15 @@ R&gt; modelsummary(models,
   vertical-align: middle;
 }
 
-#xjtothvoon .gt_from_md > :first-child {
+#axmpcasent .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#xjtothvoon .gt_from_md > :last-child {
+#axmpcasent .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#xjtothvoon .gt_row {
+#axmpcasent .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2306,7 +1567,7 @@ R&gt; modelsummary(models,
   overflow-x: hidden;
 }
 
-#xjtothvoon .gt_stub {
+#axmpcasent .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2319,7 +1580,7 @@ R&gt; modelsummary(models,
   padding-right: 5px;
 }
 
-#xjtothvoon .gt_stub_row_group {
+#axmpcasent .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2333,15 +1594,15 @@ R&gt; modelsummary(models,
   vertical-align: top;
 }
 
-#xjtothvoon .gt_row_group_first td {
+#axmpcasent .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#xjtothvoon .gt_row_group_first th {
+#axmpcasent .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#xjtothvoon .gt_summary_row {
+#axmpcasent .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2351,16 +1612,16 @@ R&gt; modelsummary(models,
   padding-right: 5px;
 }
 
-#xjtothvoon .gt_first_summary_row {
+#axmpcasent .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_first_summary_row.thick {
+#axmpcasent .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#xjtothvoon .gt_last_summary_row {
+#axmpcasent .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2370,7 +1631,7 @@ R&gt; modelsummary(models,
   border-bottom-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_grand_summary_row {
+#axmpcasent .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2380,7 +1641,7 @@ R&gt; modelsummary(models,
   padding-right: 5px;
 }
 
-#xjtothvoon .gt_first_grand_summary_row {
+#axmpcasent .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2390,7 +1651,7 @@ R&gt; modelsummary(models,
   border-top-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_last_grand_summary_row_top {
+#axmpcasent .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2400,11 +1661,11 @@ R&gt; modelsummary(models,
   border-bottom-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_striped {
+#axmpcasent .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#xjtothvoon .gt_table_body {
+#axmpcasent .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2413,7 +1674,7 @@ R&gt; modelsummary(models,
   border-bottom-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_footnotes {
+#axmpcasent .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2427,7 +1688,7 @@ R&gt; modelsummary(models,
   border-right-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_footnote {
+#axmpcasent .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -2436,7 +1697,7 @@ R&gt; modelsummary(models,
   padding-right: 5px;
 }
 
-#xjtothvoon .gt_sourcenotes {
+#axmpcasent .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2450,7 +1711,7 @@ R&gt; modelsummary(models,
   border-right-color: #D3D3D3;
 }
 
-#xjtothvoon .gt_sourcenote {
+#axmpcasent .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -2458,72 +1719,72 @@ R&gt; modelsummary(models,
   padding-right: 5px;
 }
 
-#xjtothvoon .gt_left {
+#axmpcasent .gt_left {
   text-align: left;
 }
 
-#xjtothvoon .gt_center {
+#axmpcasent .gt_center {
   text-align: center;
 }
 
-#xjtothvoon .gt_right {
+#axmpcasent .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#xjtothvoon .gt_font_normal {
+#axmpcasent .gt_font_normal {
   font-weight: normal;
 }
 
-#xjtothvoon .gt_font_bold {
+#axmpcasent .gt_font_bold {
   font-weight: bold;
 }
 
-#xjtothvoon .gt_font_italic {
+#axmpcasent .gt_font_italic {
   font-style: italic;
 }
 
-#xjtothvoon .gt_super {
+#axmpcasent .gt_super {
   font-size: 65%;
 }
 
-#xjtothvoon .gt_footnote_marks {
+#axmpcasent .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#xjtothvoon .gt_asterisk {
+#axmpcasent .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#xjtothvoon .gt_indent_1 {
+#axmpcasent .gt_indent_1 {
   text-indent: 5px;
 }
 
-#xjtothvoon .gt_indent_2 {
+#axmpcasent .gt_indent_2 {
   text-indent: 10px;
 }
 
-#xjtothvoon .gt_indent_3 {
+#axmpcasent .gt_indent_3 {
   text-indent: 15px;
 }
 
-#xjtothvoon .gt_indent_4 {
+#axmpcasent .gt_indent_4 {
   text-indent: 20px;
 }
 
-#xjtothvoon .gt_indent_5 {
+#axmpcasent .gt_indent_5 {
   text-indent: 25px;
 }
 
-#xjtothvoon .katex-display {
+#axmpcasent .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#xjtothvoon div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#axmpcasent div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2557,7 +1818,7 @@ R&gt; modelsummary(models,
 ]
 
 ---
-# Modifying regression tables (cont.)
+# Modifying regression tables
 
 .pull-left-wide[
 The `modelsummary()` function is extremely versatile. The defaults are good, but it will pay off to invest some time to learn the details, which are documented [here](https://vincentarelbundock.github.io/modelsummary/articles/modelsummary.html).
@@ -2683,7 +1944,7 @@ R&gt; modelsummary(
 R&gt; modelplot(model_out)
 ```
 
-&lt;img src="08-modeling_files/figure-html/unnamed-chunk-52-1.png" alt="" width="450px" style="display: block; margin: auto;" /&gt;
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-25-1.png" alt="" width="450px" style="display: block; margin: auto;" /&gt;
 ]
 
 ---
@@ -2715,7 +1976,7 @@ R&gt; modelplot(model_out,
 +   theme_minimal()
 ```
 
-&lt;img src="08-modeling_files/figure-html/unnamed-chunk-53-1.png" alt="" width="550px" style="display: block; margin: auto;" /&gt;
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-26-1.png" alt="" width="550px" style="display: block; margin: auto;" /&gt;
 ]
 
 ---
@@ -2809,13 +2070,318 @@ R&gt; modelplot(model_out_std)
 
 
 
+&lt;!-- ############################################ --&gt;
 ---
 class: inverse, center, middle
-name: summary
+name: manymodels
 
-# Summary
+# Bonus: Fitting many models
 
 &lt;html&gt;&lt;div style='float:left'&gt;&lt;/div&gt;&lt;hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/&gt;&lt;/html&gt;
+
+
+---
+# Decisions in the modeling workflow
+.pull-left[
+
+### Big data and the need for models
+
+- In the early days of the big data hype, people were overly enthusiastic about its implications for modeling (see quote on the right).
+- This is falling for the inception that we can simply "let the data speak".
+- However, the data science workflow is a sequence of subjective decisions from start to finish, [with lots of researcher degrees of freedom](https://www.pnas.org/doi/suppl/10.1073/pnas.2203150119).
+- Think of all the weakly justified decisions regarding:
+  - data collection / selection
+  - measurement
+  - model choice
+  - model specification
+  - reporting
+]
+
+.pull-right[
+
+&lt;br&gt;&lt;br&gt;
+
+&lt;div style="background-color:rgba(0, 0, 0, 0.1)"&gt;
+"Scientists are trained to recognize that correlation is not causation, that no conclusions should be drawn simply on the basis of correlation between X and Y. (...) Once you have a model, you can connect the data sets with confidence. Data without a model is just noise. (...) There is now a better way. Petabytes allow us to say: "Correlation is enough." We can stop looking for models. We can analyze the data without hypotheses about what it might show."
+&lt;/div&gt;
+
+ *Chris Anderson*, ["The End of Theory: The Data Deluge makes the Scientific Method Obsolete (2008, *Wired*)"](https://www.wired.com/2008/06/pb-theory/)
+
+]
+
+
+---
+# Decisions in the modeling workflow
+.pull-left[
+
+### Big data and the need for models
+
+- In the early days of the big data hype, people were overly enthusiastic about its implications for modeling (see quote on the right).
+- This is falling for the inception that we can simply "let the data speak".
+- However, the data science workflow is a sequence of subjective decisions from start to finish, with lots of researcher degrees of freedom.
+- Think of all the weakly justified decisions regarding:
+  - data collection / selection
+  - measurement
+  - model choice
+  - model specification
+  - reporting
+  
+**Question:** How do researchers usually deal with this?
+]
+
+.pull-right[
+
+&lt;br&gt;&lt;br&gt;
+
+&lt;div style="background-color:rgba(0, 0, 0, 0.1)"&gt;
+"Scientists are trained to recognize that correlation is not causation, that no conclusions should be drawn simply on the basis of correlation between X and Y. (...) Once you have a model, you can connect the data sets with confidence. Data without a model is just noise. (...) There is now a better way. Petabytes allow us to say: "Correlation is enough." We can stop looking for models. We can analyze the data without hypotheses about what it might show."
+&lt;/div&gt;
+
+ *Chris Anderson*, ["The End of Theory: The Data Deluge makes the Scientific Method Obsolete (2008, *Wired*)"](https://www.wired.com/2008/06/pb-theory/)
+
+]
+
+
+
+
+---
+# Nested models
+
+.pull-left-center[
+&lt;div align="center"&gt;
+&lt;img src="pics/nested-models-chen.png" width=500&gt;
+&lt;/div&gt;
+`Credit` Chen 2010, [The Effect of Electoral Geography on Pork Barreling in Bicameral Legislatures](https://www.jstor.org/stable/25652208)
+]
+
+.pull-right-center[
+&lt;div align="center"&gt;
+&lt;br&gt;&lt;br&gt;
+&lt;img src="pics/nested-models-park.png" width=600&gt;
+&lt;/div&gt;
+`Credit` Park et al. 2009, [Being immersed in social networking environment: Facebook groups, uses and gratifications, and social outcomes](https://pubmed.ncbi.nlm.nih.gov/19619037/)
+]
+
+
+---
+# Exploring the model space
+
+.pull-left[
+
+- **Another idea:** run not an arbitrary (small) set of models but as many (plausible ones) as possible to get an idea how much conclusions change depending on arbitrary data wrangling and modeling choices (the "model distribution").
+- There are various related procedures and labels used in different subfields to promote this idea, including:
+  - Multiverse analysis ([Steegen et al. 2016](https://journals.sagepub.com/doi/10.1177/1745691616658637))
+  - Specification curves ([Simonsohn et al. 2020](https://www.nature.com/articles/s41562-020-0912-z))
+  - Computational multimodel analysis ([Young and Holsteen 2015](http://fmwww.bc.edu/repec/bocode/m/Model_Uncertainty_and_Robustness.pdf))
+- Also check out critical perspective on "[Mülltiverse Analysis](http://www.the100.ci/2021/03/07/mulltiverse-analysis/)" (Julia Rohrer). The bottom line: Mindless multiversing doesn't give more robustness or insight.
+]
+
+.pull-right[
+&lt;div align="center"&gt;
+&lt;img src="pics/multiverse-analysis-1.png" width=500&gt;
+&lt;!--&lt;img src="pics/multimodel-analysis.png" width=230&gt;--&gt;
+&lt;/div&gt;
+]
+
+
+---
+# Specifying multiple models
+
+.pull-left[
+### When one model is not enough
+
+- Often we want to specify not one but multiple models. They can differ in model family, outcome, covariate set, transformations, or data.
+- If outcomes/features vary, so does the formula. Treating formulas as strings, we can generate them programmatically:
+
+
+``` r
+R&gt; xvars &lt;- paste0("x", 1:10)
+R&gt; as.formula(paste("y ~", paste(xvars, collapse = " + ")))
+```
+
+```
+   y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10
+```
+]
+
+.pull-right[
+### Example: extreme bounds analysis
+
+- [Extreme bounds analysis (EBA)](https://en.wikipedia.org/wiki/Extreme_bounds_analysis) estimates models with *all* combinations of a set of covariates and looks at the distribution (or range: the extreme bounds) of a coefficient across them.
+- Which determinants are robustly associated with the outcome, whatever else is in the model?
+- There are packages for this (`ExtremeBounds`), but the basics are easy to build ourselves.
+
+**Step 1: Define outcome and covariate set**
+
+
+``` r
+R&gt; depvar &lt;- "arr_delay"
+R&gt; covars &lt;- c("dep_delay", "carrier", "origin",
++             "air_time", "distance", "hour")
+```
+
+That's 63 possible non-empty subsets of covariates, hence 63 models.
+]
+
+
+---
+# Specifying multiple models (cont.)
+
+**Step 2: Build function to run lm models across set of all possible variable combinations **
+
+
+``` r
+R&gt; combn_models &lt;- function(depvar, covars, data)
++ {
++   combn_list &lt;- list()
++   # generate list of covariate combinations
++   for (i in seq_along(covars)) {
++     combn_list[[i]] &lt;- combn(covars, i, simplify = FALSE)
++   }
++   combn_list &lt;- unlist(combn_list, recursive = FALSE)
++   # function to generate formulas
++   gen_formula &lt;- function(covars, depvar) {
++     form &lt;- as.formula(paste0(depvar, " ~ ", paste0(covars, collapse = "+")))
++     form
++   }
++   # generate formulas
++   formulas_list &lt;- purrr::map(combn_list, gen_formula, depvar = depvar)
++   # run models
++   models_list &lt;- purrr::map(formulas_list, lm, data = data)
++   models_list
++ }
+```
+
+
+---
+# Specifying multiple models (cont.)
+
+**Step 3: Run the models** (on a 10,000-flight sample; the full data makes a heavy list)
+
+
+
+
+``` r
+R&gt; models_list &lt;- combn_models(depvar = depvar,  covars = covars, data = flights)
+```
+
+How many models did we fit?
+
+
+``` r
+R&gt; length(models_list)
+```
+
+```
+   [1] 63
+```
+
+And what did we get? A glimpse at the first list element:
+
+
+``` r
+R&gt; models_list[[1]]
+```
+
+```
+   
+   Call:
+   .f(formula = .x[[i]], data = ..1)
+   
+   Coefficients:
+   (Intercept)    dep_delay  
+        -6.142        1.033
+```
+
+
+
+
+---
+# Evaluating many models with broom
+
+**Step 4: Extract tidy results from all models and stack them** (this is where `broom` shines)
+
+
+``` r
+R&gt; models_broom_df &lt;- map(models_list, tidy) |&gt; list_rbind(names_to = "model")
+```
+
+**Step 5: Summarize the estimates for key predictors**
+
+
+``` r
+R&gt; models_broom_df |&gt;
++   filter(!str_detect(term, "Intercept|carrier")) |&gt;
++   ggplot(aes(estimate)) +
++   geom_histogram(binwidth = .1, color = "red") +
++   geom_vline(xintercept = 0, linetype = "dashed") +
++   facet_grid(cols = vars(term), scales = "free_y")
+```
+
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-39-1.png" alt="" style="display: block; margin: auto;" /&gt;
+
+
+
+---
+# Specification curve analysis
+
+.pull-left[
+
+- **Specification curve analysis** (SCA; [Simonsohn, Simmons and Nelson 2020](https://www.nature.com/articles/s41562-020-0912-z)) formalizes the idea: instead of reporting one (or a few) arbitrarily chosen specifications, report *all reasonable* ones.
+- Three main steps:
+  1. **Define** the set of reasonable specifications;
+  2. **Estimate** all of them and report the results in a *descriptive specification curve*;
+  3. **Test** the results jointly using an *inferential specification curve*.
+- What counts as "reasonable"? A specification should be **theoretically justified** (a sensible test of the hypothesis), **statistically valid** (not obviously misspecified), and **non-redundant** with the others in the set.
+]
+
+.pull-right[
+&lt;div align="center"&gt;
+&lt;br&gt;
+&lt;img src="pics/specification-curve-1.png" width=550&gt;
+&lt;br&gt;
+&lt;br&gt;
+&lt;img src="pics/specification-curve-2.png" width=550&gt;
+&lt;/div&gt;
+]
+
+
+---
+# Specification curve analysis (cont.)
+
+.pull-left[
+
+### The descriptive curve
+
+- All estimates sorted by effect size, significance highlighted, plus a dashboard underneath showing which decisions went into each specification.
+- Reveals *which* decisions drive the results, e.g., whether an effect only appears when a certain control is excluded.
+
+### The inferential curve
+
+- How extreme is the observed curve if the true effect were zero?
+- Simulate the null by resampling with the effect of interest removed, re-run all specifications on each resample, and compare.
+- Three joint test statistics: **median effect size**, **share of significant specifications**, **aggregate z** (Stouffer).
+]
+
+.pull-right[
+
+### In practice
+
+- Example in the paper: are hurricanes with female names deadlier? Across 1,728 reasonable specifications, only about a third of the estimates are significant; the joint tests fail to reject the null.
+- R packages: `specr` (see [here](https://masurp.github.io/specr/)) and `multiverse` (see [here](https://mucollective.github.io/multiverse/)).
+- The building blocks are what we just did: generate formulas programmatically, fit models with `map()`, collect results with `broom`.
+- Caveat: SCA does not free you from thinking. The set of specifications has to be defined *ex ante* and justified. Padded with implausible models, the curve is meaningless ("Mülltiverse").
+]
+
+
+---
+# Specification curves in the wild
+
+&lt;div align="center"&gt;
+&lt;img src="pics/specification-curve-3.png" width=850&gt;
+&lt;/div&gt;
+
+
 
 
 ---
@@ -2829,24 +2395,12 @@ Some final bits of advice that didn't fit on the main slides:
 
 3. **Fit many models**. At least if you don't commit to one particular subset (→ preregistration). Think in terms of series of models, starting with the utterly simple and continuing through to the hopelessly complex.
 
-4. **Table results with care**. Please don’t just report which effects were significant and which were non-significant. Please don’t report just p-values. Please don’t just report the estimated effects of the significant effects. Report all estimates that you also discuss.
+4. **Never judge a model on the data it was trained on**. Split first, resample to compare and tune, touch the test set once.
 
-5. **Invest more time in refining plots** than you planned to. Good figures aren't only plots. Think of informative headers and notes. Ideally, your figures are self-contained.
+5. **Table results with care**. Please don’t just report which effects were significant and which were non-significant. Please don’t report just p-values. Please don’t just report the estimated effects of the significant effects. Report all estimates that you also discuss.
 
+6. **Invest more time in refining plots** than you planned to. Good figures aren't only plots. Think of informative headers and notes. Ideally, your figures are self-contained.
 
----
-# Coming up
-
-&lt;br&gt;&lt;br&gt; 
-
-### Assignment
-
-No new assignment this time - but don't forget about the quiz!
-
-
-### Next lecture
-
-Visualization. 📊
 
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>

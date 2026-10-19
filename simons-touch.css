@@ -480,3 +480,12 @@ blockquote {
     font-weight: bold;
     padding: 0 6px;;
 }
+/* Tables: keep clear of a preceding heading (h2/h3 use negative bottom margins) */
+.remark-slide-content table {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+.remark-slide-content h2 + table,
+.remark-slide-content h3 + table {
+  margin-top: 25px;
+}
