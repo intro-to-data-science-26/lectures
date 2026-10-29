@@ -52,9 +52,11 @@ class: center, middle, inverse, title-slide
 
 2. [Modeling with tidymodels](#tidymodels)
 
-3. [Reporting modeling results](#reporting)
+3. [Processing estimation output](#postestimation)
 
-4. [Fitting many models](#manymodels)
+4. [Reporting modeling results](#reporting)
+
+5. [Fitting many models](#manymodels)
 
 
 
@@ -681,6 +683,753 @@ collect_metrics(final_fit)
 
 Both frameworks exist because workflow best practices (split first, resample to compare, tune on resamples, test once) are easy to get wrong by hand.
 ]
+
+
+
+&lt;!-- ############################################ --&gt;
+---
+class: inverse, center, middle
+name: postestimation
+
+# Processing estimation output
+
+&lt;html&gt;&lt;div style='float:left'&gt;&lt;/div&gt;&lt;hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/&gt;&lt;/html&gt;
+
+
+---
+background-image: url("pics/gamenerd.jpg")
+background-size: contain
+background-color: #000000
+
+# Processing estimation output
+
+---
+# Why model processing?
+
+.pull-left-small2[
+When estimating a model, we usually estimate parameters (or simulate distributions thereof). There is, however, more that we can take away from the estimation, including:
+
+]
+
+.pull-right-wide2[
+
+
+``` r
+summary(model_out)
+
+Call:
+lm(formula = arr_delay ~ distance + origin, data = flights)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+ -89.04  -24.00  -11.83    7.26 1281.45 
+
+Coefficients:
+              Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 13.4140488  0.1748144   76.73   &lt;2e-16 ***
+distance    -0.0040451  0.0001097  -36.87   &lt;2e-16 ***
+originJFK   -2.7042552  0.1887083  -14.33   &lt;2e-16 ***
+originLGA   -4.4561694  0.1935123  -23.03   &lt;2e-16 ***
+---
+Sig. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 44.51 on 327342 degrees of freedom
+(9430 observations deleted due to missingness)
+Multiple R-squared: 0.005503, Adjusted R-squared: 0.005493 
+F-statistic: 603.7 on 3 and 327342 DF,  p-value: &lt; 2.2e-16
+```
+
+]
+
+
+---
+# Why model processing?
+
+.pull-left-small2[
+When estimating a model, we usually estimate parameters (or simulate distributions thereof). There is, however, more that we can take away from the estimation, including:
+
+- **Estimated coefficients** and associated standard errors, T-statistics, p-values, confidence intervals
+]
+
+.pull-right-wide2[
+
+
+``` r
+summary(model_out)
+
+Call:
+lm(formula = arr_delay ~ distance + origin, data = flights)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+ -89.04  -24.00  -11.83    7.26 1281.45 
+
+*Coefficients:
+*             Estimate Std. Error t value Pr(&gt;|t|)
+*(Intercept) 13.4140488  0.1748144   76.73   &lt;2e-16 ***
+*distance    -0.0040451  0.0001097  -36.87   &lt;2e-16 ***
+*originJFK   -2.7042552  0.1887083  -14.33   &lt;2e-16 ***
+*originLGA   -4.4561694  0.1935123  -23.03   &lt;2e-16 ***
+*---
+*Sig. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 44.51 on 327342 degrees of freedom
+(9430 observations deleted due to missingness)
+Multiple R-squared: 0.005503, Adjusted R-squared: 0.005493 
+F-statistic: 603.7 on 3 and 327342 DF,  p-value: &lt; 2.2e-16
+```
+
+]
+
+
+
+---
+# Why model processing?
+
+.pull-left-small2[
+When estimating a model, we usually estimate parameters (or simulate distributions thereof). There is, however, more that we can take away from the estimation, including:
+
+- **Estimated coefficients** and associated standard errors, T-statistics, p-values, confidence intervals
+- **Model summaries**, including goods of fit measures, information on model convergence, number of observations used
+]
+
+.pull-right-wide2[
+
+
+``` r
+summary(model_out)
+
+Call:
+lm(formula = arr_delay ~ distance + origin, data = flights)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+ -89.04  -24.00  -11.83    7.26 1281.45 
+
+Coefficients:
+              Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 13.4140488  0.1748144   76.73   &lt;2e-16 ***
+distance    -0.0040451  0.0001097  -36.87   &lt;2e-16 ***
+originJFK   -2.7042552  0.1887083  -14.33   &lt;2e-16 ***
+originLGA   -4.4561694  0.1935123  -23.03   &lt;2e-16 ***
+---
+Sig. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+*Residual standard error: 44.51 on 327342 degrees of freedom
+*(9430 observations deleted due to missingness)
+*Multiple R-squared: 0.005503, Adjusted R-squared: 0.005493
+*F-statistic: 603.7 on 3 and 327342 DF,  p-value: &lt; 2.2e-16
+```
+
+]
+
+
+
+---
+# Why model processing?
+
+.pull-left-small2[
+When estimating a model, we usually estimate parameters (or simulate distributions thereof). There is, however, more that we can take away from the estimation, including:
+
+- **Estimated coefficients** and associated standard errors, T-statistics, p-values, confidence intervals
+- **Model summaries**, including goods of fit measures, information on model convergence, number of observations used
+- **Observation-level information** that arises from the estimated model, such as fitted/predicted values, residuals, estimates of influence
+]
+
+.pull-right-wide2[
+
+
+``` r
+summary(model_out)
+
+Call:
+lm(formula = arr_delay ~ distance + origin, data = flights)
+
+*Residuals:
+*   Min      1Q  Median      3Q     Max
+*-89.04  -24.00  -11.83    7.26 1281.45
+
+Coefficients:
+              Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 13.4140488  0.1748144   76.73   &lt;2e-16 ***
+distance    -0.0040451  0.0001097  -36.87   &lt;2e-16 ***
+originJFK   -2.7042552  0.1887083  -14.33   &lt;2e-16 ***
+originLGA   -4.4561694  0.1935123  -23.03   &lt;2e-16 ***
+---
+Sig. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 44.51 on 327342 degrees of freedom
+(9430 observations deleted due to missingness)
+Multiple R-squared: 0.005503, Adjusted R-squared: 0.005493 
+F-statistic: 603.7 on 3 and 327342 DF,  p-value: &lt; 2.2e-16
+```
+
+]
+
+
+
+---
+# Processing estimation output in R
+
+.pull-left-small[
+
+- Fitting a model returns an object of a certain model class (here: `lm`).
+- Printing that object returns a quite minimalist set of information - just the input formula and coefficients.
+]
+
+.pull-right-wide[
+
+
+``` r
+R&gt; model_out &lt;- lm(arr_delay ~ distance + origin, data = flights)
+R&gt; class(model_out)
+```
+
+```
+   [1] "lm"
+```
+
+``` r
+R&gt; model_out
+```
+
+```
+   
+   Call:
+   lm(formula = arr_delay ~ distance + origin, data = flights)
+   
+   Coefficients:
+   (Intercept)     distance    originJFK    originLGA  
+     13.414049    -0.004045    -2.704255    -4.456169
+```
+]
+
+---
+# Processing estimation output in R
+
+.pull-left-small[
+- Fitting a model returns an object of a certain model class (here: `lm`).
+- Printing that object returns a quite minimalist set of information - just the input formula and coefficients.
+- The anatomy of the object is considerably more complex. It comes as a list of various components, including the coefficients, residuals, fitted values, and original model input.
+]
+
+.pull-right-wide[
+
+
+``` r
+R&gt; names(model_out)
+```
+
+```
+    [1] "coefficients"  "residuals"     "effects"       "rank"         
+    [5] "fitted.values" "assign"        "qr"            "df.residual"  
+    [9] "na.action"     "contrasts"     "xlevels"       "call"         
+   [13] "terms"         "model"
+```
+]
+
+
+---
+# Processing estimation output in R
+
+.pull-left-small[
+- Fitting a model returns an object of a certain model class (here: `lm`).
+- Printing that object returns a quite minimalist set of information - just the input formula and coefficients.
+- The anatomy of the object is considerably more complex. It comes as a list of various components, including the coefficients, residuals, fitted values, and original model input.
+- There's no way to print this list on the slide in full - it's just too long.
+]
+
+.pull-right-wide[
+
+
+``` r
+R&gt; str(model_out)
+```
+
+```
+   List of 14
+    $ coefficients : Named num [1:4] 13.41405 -0.00405 -2.70426 -4.45617
+     ..- attr(*, "names")= chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
+    $ residuals    : Named num [1:327346] 3.25 16.77 26.7 -22.33 -30.88 ...
+     ..- attr(*, "names")= chr [1:327346] "1" "2" "3" "4" ...
+    $ effects      : Named num [1:327346] -3945.1 1579.9 204.2 1025 -30.8 ...
+     ..- attr(*, "names")= chr [1:327346] "(Intercept)" "distance" "originJFK" "originLGA" ...
+    $ rank         : int 4
+    $ fitted.values: Named num [1:327346] 7.75 3.23 6.3 4.33 5.88 ...
+     ..- attr(*, "names")= chr [1:327346] "1" "2" "3" "4" ...
+    $ assign       : int [1:4] 0 1 2 2
+    $ qr           :List of 5
+     ..$ qr   : num [1:327346, 1:4] -5.72e+02 1.75e-03 1.75e-03 1.75e-03 1.75e-03 ...
+     .. ..- attr(*, "dimnames")=List of 2
+     .. .. ..$ : chr [1:327346] "1" "2" "3" "4" ...
+     .. .. ..$ : chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
+     .. ..- attr(*, "assign")= int [1:4] 0 1 2 2
+     .. ..- attr(*, "contrasts")=List of 1
+     .. .. ..$ origin: chr "contr.treatment"
+     ..$ qraux: num [1:4] 1 1 1 1
+     ..$ pivot: int [1:4] 1 2 3 4
+     ..$ tol  : num 1e-07
+     ..$ rank : int 4
+     ..- attr(*, "class")= chr "qr"
+    $ df.residual  : int 327342
+    $ na.action    : 'omit' Named int [1:9430] 472 478 616 644 726 734 755 839 840 841 ...
+     ..- attr(*, "names")= chr [1:9430] "472" "478" "616" "644" ...
+    $ contrasts    :List of 1
+     ..$ origin: chr "contr.treatment"
+    $ xlevels      :List of 1
+     ..$ origin: chr [1:3] "EWR" "JFK" "LGA"
+    $ call         : language lm(formula = arr_delay ~ distance + origin, data = flights)
+    $ terms        :Classes 'terms', 'formula'  language arr_delay ~ distance + origin
+     .. ..- attr(*, "variables")= language list(arr_delay, distance, origin)
+     .. ..- attr(*, "factors")= int [1:3, 1:2] 0 1 0 0 0 1
+     .. .. ..- attr(*, "dimnames")=List of 2
+     .. .. .. ..$ : chr [1:3] "arr_delay" "distance" "origin"
+     .. .. .. ..$ : chr [1:2] "distance" "origin"
+     .. ..- attr(*, "term.labels")= chr [1:2] "distance" "origin"
+     .. ..- attr(*, "order")= int [1:2] 1 1
+     .. ..- attr(*, "intercept")= int 1
+     .. ..- attr(*, "response")= int 1
+     .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; 
+     .. ..- attr(*, "predvars")= language list(arr_delay, distance, origin)
+     .. ..- attr(*, "dataClasses")= Named chr [1:3] "numeric" "numeric" "character"
+     .. .. ..- attr(*, "names")= chr [1:3] "arr_delay" "distance" "origin"
+    $ model        :'data.frame':	327346 obs. of  3 variables:
+     ..$ arr_delay: num [1:327346] 11 20 33 -18 -25 12 19 -14 -8 8 ...
+     ..$ distance : num [1:327346] 1400 1416 1089 1576 762 ...
+     ..$ origin   : chr [1:327346] "EWR" "LGA" "JFK" "JFK" ...
+     ..- attr(*, "terms")=Classes 'terms', 'formula'  language arr_delay ~ distance + origin
+     .. .. ..- attr(*, "variables")= language list(arr_delay, distance, origin)
+     .. .. ..- attr(*, "factors")= int [1:3, 1:2] 0 1 0 0 0 1
+     .. .. .. ..- attr(*, "dimnames")=List of 2
+     .. .. .. .. ..$ : chr [1:3] "arr_delay" "distance" "origin"
+     .. .. .. .. ..$ : chr [1:2] "distance" "origin"
+     .. .. ..- attr(*, "term.labels")= chr [1:2] "distance" "origin"
+     .. .. ..- attr(*, "order")= int [1:2] 1 1
+     .. .. ..- attr(*, "intercept")= int 1
+     .. .. ..- attr(*, "response")= int 1
+     .. .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; 
+     .. .. ..- attr(*, "predvars")= language list(arr_delay, distance, origin)
+     .. .. ..- attr(*, "dataClasses")= Named chr [1:3] "numeric" "numeric" "character"
+     .. .. .. ..- attr(*, "names")= chr [1:3] "arr_delay" "distance" "origin"
+     ..- attr(*, "na.action")= 'omit' Named int [1:9430] 472 478 616 644 726 734 755 839 840 841 ...
+     .. ..- attr(*, "names")= chr [1:9430] "472" "478" "616" "644" ...
+    - attr(*, "class")= chr "lm"
+```
+]
+
+
+
+
+
+---
+# Processing estimation output in R
+
+.pull-left-small[
+
+- However, there are some high-level functions we can apply to do something useful with the model object, including:
+  - `coef()` to extract the coefficients
+]
+
+.pull-right-wide[
+
+
+``` r
+R&gt; coef(model_out)
+```
+
+```
+    (Intercept)     distance    originJFK    originLGA 
+   13.414048769 -0.004045067 -2.704255237 -4.456169356
+```
+]
+
+
+---
+# Processing estimation output in R
+
+.pull-left-small[
+
+- However, there are some high-level functions we can apply to do something useful with the model object, including:
+  - `coef()` to extract the coefficients
+  - `fitted.values()` to extract the outcome values predicted by the model
+]
+
+.pull-right-wide[
+
+
+``` r
+R&gt; coef(model_out)
+```
+
+```
+    (Intercept)     distance    originJFK    originLGA 
+   13.414048769 -0.004045067 -2.704255237 -4.456169356
+```
+
+``` r
+R&gt; fitted.values(model_out)[1:5]
+```
+
+```
+          1        2        3        4        5 
+   7.750955 3.230064 6.304715 4.334768 5.875538
+```
+]
+
+
+---
+# Processing estimation output in R
+
+.pull-left-small[
+
+- However, there are some high-level functions we can apply to do something useful with the model object, including:
+  - `coef()` to extract the coefficients
+  - `fitted.values()` to extract the outcome values predicted by the model
+  - `residuals()` to extract the residuals
+]
+
+.pull-right-wide[
+
+
+``` r
+R&gt; coef(model_out)
+```
+
+```
+    (Intercept)     distance    originJFK    originLGA 
+   13.414048769 -0.004045067 -2.704255237 -4.456169356
+```
+
+``` r
+R&gt; fitted.values(model_out)[1:5]
+```
+
+```
+          1        2        3        4        5 
+   7.750955 3.230064 6.304715 4.334768 5.875538
+```
+
+``` r
+R&gt; residuals(model_out)[1:5]
+```
+
+```
+            1          2          3          4          5 
+     3.249045  16.769936  26.695285 -22.334768 -30.875538
+```
+]
+
+
+---
+# Processing estimation output in R
+
+.pull-left-small[
+
+- However, there are some high-level functions we can apply to do something useful with the model object, including:
+  - `coef()` to extract the coefficients
+  - `fitted.values()` to extract the outcome values predicted by the model
+  - `residuals()` to extract the residuals
+  - `model.matrix()` to extract the matrix of original input variables (predictors)
+]
+
+.pull-right-wide[
+
+
+``` r
+R&gt; coef(model_out)
+```
+
+```
+    (Intercept)     distance    originJFK    originLGA 
+   13.414048769 -0.004045067 -2.704255237 -4.456169356
+```
+
+``` r
+R&gt; fitted.values(model_out)[1:5]
+```
+
+```
+          1        2        3        4        5 
+   7.750955 3.230064 6.304715 4.334768 5.875538
+```
+
+``` r
+R&gt; residuals(model_out)[1:5]
+```
+
+```
+            1          2          3          4          5 
+     3.249045  16.769936  26.695285 -22.334768 -30.875538
+```
+
+``` r
+R&gt; model.matrix(model_out) %&gt;% head(4)
+```
+
+```
+     (Intercept) distance originJFK originLGA
+   1           1     1400         0         0
+   2           1     1416         0         1
+   3           1     1089         1         0
+   4           1     1576         1         0
+```
+]
+
+
+
+---
+# Processing estimation output in R
+
+.pull-left-small[
+
+- To learn more about the estimated model, we can apply the `summary()` function.
+- The `summary` method is specific to the model class it is applied to (here: "`lm` "). To learn more, you'd have to call, e.g., `?summary.lm` or `?summary.glm`.
+
+]
+
+.pull-right-wide[
+
+
+``` r
+R&gt; summary(model_out)
+```
+
+```
+   
+   Call:
+   lm(formula = arr_delay ~ distance + origin, data = flights)
+   
+   Residuals:
+       Min      1Q  Median      3Q     Max 
+    -89.04  -24.00  -11.83    7.26 1281.45 
+   
+   Coefficients:
+                 Estimate Std. Error t value Pr(&gt;|t|)    
+   (Intercept) 13.4140488  0.1748144   76.73   &lt;2e-16 ***
+   distance    -0.0040451  0.0001097  -36.87   &lt;2e-16 ***
+   originJFK   -2.7042552  0.1887083  -14.33   &lt;2e-16 ***
+   originLGA   -4.4561694  0.1935123  -23.03   &lt;2e-16 ***
+   ---
+   Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+   
+   Residual standard error: 44.51 on 327342 degrees of freedom
+     (9430 observations deleted due to missingness)
+   Multiple R-squared:  0.005503,	Adjusted R-squared:  0.005493 
+   F-statistic: 603.7 on 3 and 327342 DF,  p-value: &lt; 2.2e-16
+```
+]
+
+---
+# Processing estimation output in R
+
+.pull-left-small[
+
+- To learn more about the estimated model, we can apply the `summary()` function.
+- The `summary` method is specific to the model class it is applied to (here: "`lm` "). To learn more, you'd have to call, e.g., `?summary.lm` or `?summary.glm`.
+- The function creates more than a printed summary in the console. It returns an object of class `summary.lm`, which can be further dissected.
+]
+
+.pull-right-wide[
+
+
+``` r
+R&gt; class(summary(model_out))
+```
+
+```
+   [1] "summary.lm"
+```
+
+]
+
+---
+# Processing estimation output in R
+
+.pull-left-small[
+
+- To learn more about the estimated model, we can apply the `summary()` function.
+- The `summary` method is specific to the model class it is applied to (here: "`lm` "). To learn more, you'd have to call, e.g., `?summary.lm` or `?summary.glm`.
+- The function creates more than a printed summary in the console. It returns an object of class `summary.lm`, which can be further dissected.
+- Again, there's no way to print this list on the slide in full - it's just too long.
+]
+
+.pull-right-wide[
+
+
+``` r
+R&gt; str(summary(model_out))
+```
+
+```
+   List of 12
+    $ call         : language lm(formula = arr_delay ~ distance + origin, data = flights)
+    $ terms        :Classes 'terms', 'formula'  language arr_delay ~ distance + origin
+     .. ..- attr(*, "variables")= language list(arr_delay, distance, origin)
+     .. ..- attr(*, "factors")= int [1:3, 1:2] 0 1 0 0 0 1
+     .. .. ..- attr(*, "dimnames")=List of 2
+     .. .. .. ..$ : chr [1:3] "arr_delay" "distance" "origin"
+     .. .. .. ..$ : chr [1:2] "distance" "origin"
+     .. ..- attr(*, "term.labels")= chr [1:2] "distance" "origin"
+     .. ..- attr(*, "order")= int [1:2] 1 1
+     .. ..- attr(*, "intercept")= int 1
+     .. ..- attr(*, "response")= int 1
+     .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; 
+     .. ..- attr(*, "predvars")= language list(arr_delay, distance, origin)
+     .. ..- attr(*, "dataClasses")= Named chr [1:3] "numeric" "numeric" "character"
+     .. .. ..- attr(*, "names")= chr [1:3] "arr_delay" "distance" "origin"
+    $ residuals    : Named num [1:327346] 3.25 16.77 26.7 -22.33 -30.88 ...
+     ..- attr(*, "names")= chr [1:327346] "1" "2" "3" "4" ...
+    $ coefficients : num [1:4, 1:4] 13.41405 -0.00405 -2.70426 -4.45617 0.17481 ...
+     ..- attr(*, "dimnames")=List of 2
+     .. ..$ : chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
+     .. ..$ : chr [1:4] "Estimate" "Std. Error" "t value" "Pr(&gt;|t|)"
+    $ aliased      : Named logi [1:4] FALSE FALSE FALSE FALSE
+     ..- attr(*, "names")= chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
+    $ sigma        : num 44.5
+    $ df           : int [1:3] 4 327342 4
+    $ r.squared    : num 0.0055
+    $ adj.r.squared: num 0.00549
+    $ fstatistic   : Named num [1:3] 604 3 327342
+     ..- attr(*, "names")= chr [1:3] "value" "numdf" "dendf"
+    $ cov.unscaled : num [1:4, 1:4] 1.54e-05 -6.47e-09 -7.18e-06 -1.03e-05 -6.47e-09 ...
+     ..- attr(*, "dimnames")=List of 2
+     .. ..$ : chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
+     .. ..$ : chr [1:4] "(Intercept)" "distance" "originJFK" "originLGA"
+    $ na.action    : 'omit' Named int [1:9430] 472 478 616 644 726 734 755 839 840 841 ...
+     ..- attr(*, "names")= chr [1:9430] "472" "478" "616" "644" ...
+    - attr(*, "class")= chr "summary.lm"
+```
+
+]
+
+
+
+
+---
+# Dissecting model objects
+
+.pull-left[
+
+### The problem
+
+"While model inputs usually require tidy inputs, such attention to detail doesn’t carry over to model outputs. Outputs such as predictions and estimated coefficients aren’t always tidy. This makes it more difficult to combine results from multiple models. For example, in R, the default representation of model coefficients is not tidy because it does not have an explicit variable that records the variable name for each estimate, they are instead recorded as row names. (...) This knocks you out of the flow of analysis and makes it harder to combine the results from multiple models. I’m not currently aware of any packages that resolve this problem."
+
+ *Hadley Wickham*, ["Tidy Data"](https://www.jstatsoft.org/article/view/v059i10)
+
+]
+
+.pull-right[
+
+### The solution?
+
+See next slide!
+
+]
+
+
+
+---
+# Processing estimation output with broom
+
+
+.pull-left-wide[
+
+`broom` is a suite of tools that summarizes key information about models. It takes the messy output of built-in functions in R, such as `lm` or `t.test`, and turns them into tidy `tibbles()` (think: dataframes). The output is not ready for publication but an important intermediary step that makes post-processing of estimation results more convenient. It is part of the [tidyverse](https://www.tidyverse.org/) and [tidymodels](https://www.tidymodels.org/).
+
+There are three key `broom` verbs that you need to learn.&lt;sup&gt;1&lt;/sup&gt;
+
+1. `tidy()`: Summarizes information about model components.
+
+2. `glance()`: Reports information about the entire model.
+
+3. `augment()`: Adds information about observations to a dataset.
+
+]
+
+.footnote[
+&lt;sup&gt;1&lt;/sup&gt; For a more detailed and comprehensive introduction, see the [official documentation at https://broom.tidymodels.org/](https://broom.tidymodels.org/).
+]
+
+.pull-right-small-center[
+&lt;div align="center"&gt;
+&lt;br&gt;
+&lt;img src="pics/broom.png" height=250&gt;
+&lt;/div&gt;
+]
+
+---
+# Tidy model objects with tidy()
+
+`broom`'s `tidy()` function extracts the coefficient block (the model component) together with inferential statistics:
+
+
+``` r
+R&gt; broom::tidy(model_out, conf.int = TRUE, conf.level = 0.95)
+```
+
+```
+   # A tibble: 4 × 7
+     term        estimate std.error statistic   p.value conf.low conf.high
+     &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+   1 (Intercept) 13.4      0.175         76.7 0         13.1      13.8    
+   2 distance    -0.00405  0.000110     -36.9 5.53e-297 -0.00426  -0.00383
+   3 originJFK   -2.70     0.189        -14.3 1.46e- 46 -3.07     -2.33   
+   4 originLGA   -4.46     0.194        -23.0 3.04e-117 -4.84     -4.08
+```
+
+--
+
+Here, we also extract the upper and lower bounds on the 95% confidence intervals for the estimates. What makes the function so convenient is the fact that the output comes as a tidy `tibble` with useful variable names.
+
+What exactly is extracted depends on the model type. You can learn more about the tidying function by typing `?tidy.[model class]`, e.g.: `?tidy.lm`.
+
+---
+# Summarize model statistics with glance()
+
+`broom`'s `glance()` function extracts summary statistics of the model and provides them in a single-row `tibble`: 
+
+
+``` r
+R&gt; broom::glance(model_out)
+```
+
+```
+   # A tibble: 1 × 12
+     r.squared adj.r.squared sigma statistic p.value    df    logLik     AIC    BIC
+         &lt;dbl&gt;         &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;
+   1   0.00550       0.00549  44.5      604.       0     3 -1706997.  3.41e6 3.41e6
+   # ℹ 3 more variables: deviance &lt;dbl&gt;, df.residual &lt;int&gt;, nobs &lt;int&gt;
+```
+
+
+---
+# Augment data with model information with augment()
+
+`broom`'s `augment()` function adds model information about each observation in a dataset, including, e.g.:
+  - predicted values (in the `.fitted` column)
+  - residuals (`.resid`)
+  - standard errors of fitted values (`.se.fit`; optional)
+
+
+``` r
+R&gt; broom::augment(model_out, se_fit = TRUE) %&gt;% head(3)
+```
+
+```
+   # A tibble: 3 × 11
+     .rownames arr_delay distance origin .fitted .se.fit .resid       .hat .sigma
+     &lt;chr&gt;         &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt;    &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;      &lt;dbl&gt;  &lt;dbl&gt;
+   1 1                11     1400 EWR       7.75   0.135   3.25 0.00000922   44.5
+   2 2                20     1416 LGA       3.23   0.156  16.8  0.0000123    44.5
+   3 3                33     1089 JFK       6.30   0.136  26.7  0.00000938   44.5
+   # ℹ 2 more variables: .cooksd &lt;dbl&gt;, .std.resid &lt;dbl&gt;
+```
+
+--
+
+It is also possible to pass on data that was not used during model fitting using the `newdata` argument. This requires that at least all predictor variable columns used to fit the model are present. Providing new data can be useful if one is interested to generate predictions for a test set.
+
+
 
 
 &lt;!-- ############################################ --&gt;
@@ -1940,7 +2689,7 @@ R&gt; modelsummary(
 R&gt; modelplot(model_out)
 ```
 
-&lt;img src="08-modeling_files/figure-html/unnamed-chunk-23-1.png" alt="" width="450px" style="display: block; margin: auto;" /&gt;
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-40-1.png" alt="" width="450px" style="display: block; margin: auto;" /&gt;
 ]
 
 ---
@@ -1972,7 +2721,7 @@ R&gt; modelplot(model_out,
 +   theme_minimal()
 ```
 
-&lt;img src="08-modeling_files/figure-html/unnamed-chunk-24-1.png" alt="" width="550px" style="display: block; margin: auto;" /&gt;
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-41-1.png" alt="" width="550px" style="display: block; margin: auto;" /&gt;
 ]
 
 ---
@@ -2002,7 +2751,7 @@ R&gt; modelplot(model_out,
 
 .pull-left[
 
-**Rescaling (1 unit = 1000 miles)** 
+## Rescaling (1 unit = 1000 miles)
 
 
 ``` r
@@ -2024,7 +2773,7 @@ R&gt; modelplot(model_out_kmiles)
 ]
 
 .pull-right[
-**Standardization (1 unit = 1 s.d. on the covariate)** 
+## Standardization (1 unit = 1 s.d. on the covariate)
 
 
 ``` r
@@ -2314,7 +3063,7 @@ R&gt; models_broom_df |&gt;
 +   facet_grid(cols = vars(term), scales = "free_y")
 ```
 
-&lt;img src="08-modeling_files/figure-html/unnamed-chunk-37-1.png" alt="" style="display: block; margin: auto;" /&gt;
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-54-1.png" alt="" style="display: block; margin: auto;" /&gt;
 
 
 
