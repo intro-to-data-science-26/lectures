@@ -113,3 +113,4 @@ ggplot(preds, aes(distance, pred, color = specification)) +
 
 # Which one fits best? (More on evaluating models in the tidymodels part.)
 sapply(list(linear = m_lin, quadratic = m_quad, log = m_log), AIC)
+

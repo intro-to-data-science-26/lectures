@@ -54,7 +54,7 @@ class: center, middle, inverse, title-slide
 
 3. [Reporting modeling results](#reporting)
 
-4. [Bonus: Fitting many models](#manymodels)
+4. [Fitting many models](#manymodels)
 
 
 
@@ -420,6 +420,8 @@ Preprocessing that *learns* from data (centering, dummy coding, imputation) is e
 Splitting, resampling, and tuning are all integrated in one workflow. 
 ]
 
+&lt;hr style="width: 75%; margin: .5em auto; background-color: black; height: 1px;"&gt;
+
 Note that `tidymodels` is **not a modeling method.** You still need to know what a model does. And tidymodels is built for *predictive* modeling; for *inferential* work, base R plus `broom` are fine.
 
 We'll now look at the intuition behind each step and at a minimal example (check out the labs for details!).
@@ -485,37 +487,31 @@ R&gt; predict(lm_fit, new_data = tibble(dep_delay = c(0, 60),
 .pull-left[
 ### The idea
 
-- Models rarely take raw data: dummy coding, transformations, feature extraction, missing values, rare categories.
-- Some of these steps *learn* from the data (a mean, the set of categories). If they learn from *all* data, test-set information leaks into training and evaluation becomes too optimistic.
-- **Split first.** Then write a **recipe**: a specification of preprocessing steps, estimated on the training data and applied unchanged to new data.
+- Models rarely take raw data: categorical predictors need dummy coding, rare categories get lumped together, variables get transformed.
+- Some of these steps *learn* from the data (which categories are rare, a mean for centering). If they learn from *all* data, test-set information leaks into training and evaluation becomes too optimistic.
+- **Split first.** Then write a **recipe**: a list of preprocessing steps, estimated on the training data and applied unchanged to new data.
 - A **workflow** bundles recipe and model, so that fitting and predicting always use both together.
 ]
 
 .pull-right[
 
-Let's switch to a classification task: is a flight more than 30 minutes late? (20,000 sampled flights, 7 predictors.)
-
-
+We extend the model with more predictors: distance, origin airport, carrier, and scheduled hour of departure.
 
 
 ``` r
-R&gt; flights_split &lt;- initial_split(flights_small,
-+                                strata = late)
-R&gt; train_data &lt;- training(flights_split)
+R&gt; set.seed(123)
+R&gt; fl_split &lt;- initial_split(fl)
+R&gt; train_data &lt;- training(fl_split)
 R&gt; 
-R&gt; flights_rec &lt;- recipe(late ~ .,
-+                       data = train_data) |&gt;
-+   update_role(flight, time_hour, new_role = "ID") |&gt;
-+   step_date(date, features = c("dow", "month"),
-+             keep_original_cols = FALSE) |&gt;
-+   step_other(all_nominal_predictors(),
-+              threshold = 0.01) |&gt;
-+   step_dummy(all_nominal_predictors()) |&gt;
-+   step_zv(all_predictors())
+R&gt; fl_rec &lt;- recipe(arr_delay ~ dep_delay + hour +
++                    distance + origin + carrier,
++                  data = train_data) |&gt;
++   step_other(carrier, threshold = 0.05) |&gt;
++   step_dummy(all_nominal_predictors())
 R&gt; 
-R&gt; lr_wf &lt;- workflow() |&gt;
-+   add_model(logistic_reg() |&gt; set_engine("glm")) |&gt;
-+   add_recipe(flights_rec)
+R&gt; lm_wf &lt;- workflow() |&gt;
++   add_model(lm_mod) |&gt;
++   add_recipe(fl_rec)
 ```
 ]
 
@@ -523,46 +519,43 @@ R&gt; lr_wf &lt;- workflow() |&gt;
 ---
 # Step 3: Evaluate the model
 
-
-
 .pull-left[
 ### The idea
 
-- We want to know how a model performs on *new* data.
-- **Evaluating on the training data misleads:** flexible models can memorize it (the random forest on the right reaches an ROC AUC of 0.99 on its own training data).
+- We want to know how a model performs on *new* data, not on the data it was fitted to.
+- **Evaluating on the training data misleads:** every extra predictor improves the fit, even if it only picks up noise. Flexible models can memorize the training data.
 - **Evaluating repeatedly on the test set misleads, too:** the test set becomes part of model selection.
-- **Resampling:** create many splits *within the training set* (e.g., `\(v\)`-fold cross-validation), fit on one part, score on the other, average. Use the resampling estimates to compare models; keep the test set for one final check.
-- Choose the metric *before* looking at results. Accuracy can mislead with imbalanced outcomes (here, 84% of flights are on time).
+- **Resampling:** split the training set into `\(v\)` folds, fit on `\(v-1\)` of them, score on the held-out fold, repeat, average. Use these estimates to compare models; keep the test set for one final check.
+- Here we compare the one-predictor model with the extended one. RMSE is the typical prediction error in minutes.
 ]
 
 .pull-right[
 
 
 ``` r
-R&gt; rf_mod &lt;- rand_forest(trees = 500) |&gt;
-+   set_engine("ranger") |&gt;
-+   set_mode("classification")
-R&gt; rf_wf &lt;- lr_wf |&gt; update_model(rf_mod)
-R&gt; 
-R&gt; set.seed(345)
+R&gt; set.seed(234)
 R&gt; folds &lt;- vfold_cv(train_data, v = 5)
-R&gt; metrics &lt;- metric_set(roc_auc)
-R&gt; rf_res &lt;- fit_resamples(rf_wf, folds,
-+                         metrics = metrics)
-R&gt; lr_res &lt;- fit_resamples(lr_wf, folds,
-+                         metrics = metrics)
-R&gt; bind_rows(rf = collect_metrics(rf_res),
-+           logit = collect_metrics(lr_res),
+R&gt; 
+R&gt; simple_wf &lt;- workflow() |&gt;
++   add_model(lm_mod) |&gt;
++   add_formula(arr_delay ~ dep_delay)
+R&gt; 
+R&gt; simple_res &lt;- fit_resamples(simple_wf, folds)
+R&gt; lm_res &lt;- fit_resamples(lm_wf, folds)
+R&gt; 
+R&gt; bind_rows(simple = collect_metrics(simple_res),
++           extended = collect_metrics(lm_res),
 +           .id = "model") |&gt;
++   filter(.metric == "rmse") |&gt;
 +   select(model, mean, std_err)
 ```
 
 ```
-   # A tibble: 2 x 3
-     model  mean std_err
-     &lt;chr&gt; &lt;dbl&gt;   &lt;dbl&gt;
-   1 rf    0.769 0.00801
-   2 logit 0.749 0.00531
+   # A tibble: 2 × 3
+     model     mean std_err
+     &lt;chr&gt;    &lt;dbl&gt;   &lt;dbl&gt;
+   1 simple    18.0   0.155
+   2 extended  17.7   0.166
 ```
 ]
 
@@ -573,40 +566,41 @@ R&gt; bind_rows(rf = collect_metrics(rf_res),
 .pull-left[
 ### The idea
 
-- **Parameters** are learned from data (coefficients, split points). **Hyperparameters** must be set *before* training: the penalty in a lasso, the depth of a tree, the number of neighbors in `\(k\)`-NN.
-- They typically control complexity, i.e., the trade-off between underfitting and overfitting.
-- **Tuning:** mark hyperparameters with `tune()`, try a grid of candidates on the resamples, pick the best, plug it in, and fit *once* more on all training data. `last_fit()` then evaluates on the test set, the first and only time it is used.
-- If test-set and resampling results agree, the tuning did not overfit. Here, the test-set ROC AUC is close to the resampling estimate.
+- **Parameters** are learned from data (the coefficients). **Hyperparameters** are set *before* training and control model complexity.
+- Example: the **lasso** penalizes the size of the coefficients. The larger the penalty, the more coefficients are set to exactly zero. How large should it be? Tune it.
+- **Tuning:** mark the hyperparameter with `tune()`, try a grid of candidates on the resamples, pick the best, and fit *once* more on all training data. `last_fit()` then scores the test set, the first and only time it is used.
+- Here the best penalty is small: with 5,000 flights and few predictors, there is little to regularize. The test-set RMSE matches the resampling estimate from the previous slide.
 ]
 
 .pull-right[
 
 
 ``` r
-R&gt; tree_mod &lt;-
-+   decision_tree(cost_complexity = tune(),
-+                 tree_depth = tune()) |&gt;
-+   set_engine("rpart") |&gt; set_mode("classification")
-R&gt; tree_wf &lt;- lr_wf |&gt; update_model(tree_mod)
-R&gt; set.seed(567)
-R&gt; tree_res &lt;- tune_grid(tree_wf, folds, grid = 25,
-+                       metrics = metrics)
-R&gt; best &lt;- select_best(tree_res,
-+                     metric = "roc_auc")
-R&gt; final_fit &lt;- tree_wf |&gt;
-+   finalize_workflow(best) |&gt;
-+   last_fit(flights_split)
-R&gt; collect_metrics(final_fit) |&gt;
-+   select(.metric, .estimate)
+R&gt; lasso_mod &lt;- linear_reg(penalty = tune(),
++                         mixture = 1) |&gt;
++   set_engine("glmnet")
+R&gt; lasso_wf &lt;- lm_wf |&gt; update_model(lasso_mod)
+R&gt; 
+R&gt; grid &lt;- tibble(penalty = 10^seq(-2, 2, by = 0.2))
+R&gt; lasso_res &lt;- tune_grid(lasso_wf, folds,
++                        grid = grid)
+R&gt; best &lt;- select_best(lasso_res, metric = "rmse")
+R&gt; best$penalty
 ```
 
 ```
-   # A tibble: 3 x 2
-     .metric     .estimate
-     &lt;chr&gt;           &lt;dbl&gt;
-   1 accuracy        0.843
-   2 roc_auc         0.729
-   3 brier_class     0.120
+   [1] 0.06309573
+```
+
+``` r
+R&gt; final_fit &lt;- lasso_wf |&gt;
++   finalize_workflow(best) |&gt; last_fit(fl_split)
+R&gt; collect_metrics(final_fit) |&gt;
++   filter(.metric == "rmse") |&gt; pull(.estimate)
+```
+
+```
+   [1] 17.37288
 ```
 ]
 
@@ -615,39 +609,41 @@ R&gt; collect_metrics(final_fit) |&gt;
 # The whole workflow in one slide
 
 .pull-left[
+.font80[
 
 
 ``` r
 # split
-flights_split &lt;- initial_split(flights_small)
-train_data &lt;- training(flights_split)
+fl_split &lt;- initial_split(fl)
+train_data &lt;- training(fl_split)
 folds &lt;- vfold_cv(train_data, v = 5)
-flights_rec &lt;- recipe(late ~ ., data = train_data) |&gt;
-  update_role(flight, time_hour, new_role = "ID") |&gt;
-  step_date(date, features = c("dow", "month")) |&gt;
-  step_other(all_nominal_predictors()) |&gt;
-  step_dummy(all_nominal_predictors()) |&gt;
-  step_zv(all_predictors())
-# build (with open hyperparameters)
-tree_spec &lt;- decision_tree(cost_complexity = tune(),
-                           tree_depth = tune()) |&gt;
-  set_engine("rpart") |&gt; set_mode("classification")
-tree_wf &lt;- workflow() |&gt;
-  add_model(tree_spec) |&gt; add_recipe(flights_rec)
+# preprocess
+fl_rec &lt;- recipe(arr_delay ~ dep_delay + hour +
+                   distance + origin + carrier,
+                 data = train_data) |&gt;
+  step_other(carrier, threshold = 0.05) |&gt;
+  step_dummy(all_nominal_predictors())
+# build (with open hyperparameter)
+lasso_mod &lt;- linear_reg(penalty = tune(), mixture = 1) |&gt;
+  set_engine("glmnet")
+lasso_wf &lt;- workflow() |&gt;
+  add_model(lasso_mod) |&gt; add_recipe(fl_rec)
 # tune, evaluate, last fit
-tree_res &lt;- tree_wf |&gt; tune_grid(folds, grid = 25)
-best &lt;- select_best(tree_res, metric = "roc_auc")
-final_fit &lt;- tree_wf |&gt; finalize_workflow(best) |&gt;
-  last_fit(flights_split)
+grid &lt;- tibble(penalty = 10^seq(-2, 2, by = 0.2))
+lasso_res &lt;- tune_grid(lasso_wf, folds, grid = grid)
+best &lt;- select_best(lasso_res, metric = "rmse")
+final_fit &lt;- lasso_wf |&gt; finalize_workflow(best) |&gt;
+  last_fit(fl_split)
 collect_metrics(final_fit)
 ```
+]
 ]
 
 .pull-right[
 
 ### Take it from there
 
-- To try another model: replace `tree_spec`. To try other features: edit the recipe. Everything downstream stays the same.
+- To try another model: replace `lasso_mod` (e.g., with `rand_forest()`). To try other features: edit the recipe. Everything downstream stays the same.
 - Article 5 of [Get Started](https://www.tidymodels.org/start/case-study/) runs this cycle on hotel bookings with a penalized logistic regression and a random forest, comparing them via ROC curves.
 - What we didn't cover: `workflowsets` (many model/recipe combinations at once), iterative tuning (`tune_bayes()`), ensembles (`stacks`). See [*Tidy Modeling with R*](https://www.tmwr.org/).
 ]
@@ -784,23 +780,23 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
 +              output = "gt")
 ```
 
-<div id="yxzpapeiut" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#yxzpapeiut table {
+<div id="mabxjiytid" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#mabxjiytid table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#yxzpapeiut thead, #yxzpapeiut tbody, #yxzpapeiut tfoot, #yxzpapeiut tr, #yxzpapeiut td, #yxzpapeiut th {
+#mabxjiytid thead, #mabxjiytid tbody, #mabxjiytid tfoot, #mabxjiytid tr, #mabxjiytid td, #mabxjiytid th {
   border-style: none;
 }
 
-#yxzpapeiut p {
+#mabxjiytid p {
   margin: 0;
   padding: 0;
 }
 
-#yxzpapeiut .gt_table {
+#mabxjiytid .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -826,12 +822,12 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-left-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_caption {
+#mabxjiytid .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#yxzpapeiut .gt_title {
+#mabxjiytid .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -843,7 +839,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-bottom-width: 0;
 }
 
-#yxzpapeiut .gt_subtitle {
+#mabxjiytid .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -855,7 +851,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-top-width: 0;
 }
 
-#yxzpapeiut .gt_heading {
+#mabxjiytid .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -867,13 +863,13 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-right-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_bottom_border {
+#mabxjiytid .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_col_headings {
+#mabxjiytid .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -888,7 +884,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-right-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_col_heading {
+#mabxjiytid .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -908,7 +904,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   overflow-x: hidden;
 }
 
-#yxzpapeiut .gt_column_spanner_outer {
+#mabxjiytid .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -920,15 +916,15 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   padding-right: 4px;
 }
 
-#yxzpapeiut .gt_column_spanner_outer:first-child {
+#mabxjiytid .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#yxzpapeiut .gt_column_spanner_outer:last-child {
+#mabxjiytid .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#yxzpapeiut .gt_column_spanner {
+#mabxjiytid .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -940,11 +936,11 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   width: 100%;
 }
 
-#yxzpapeiut .gt_spanner_row {
+#mabxjiytid .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#yxzpapeiut .gt_group_heading {
+#mabxjiytid .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -970,7 +966,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   text-align: left;
 }
 
-#yxzpapeiut .gt_empty_group_heading {
+#mabxjiytid .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -985,15 +981,15 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   vertical-align: middle;
 }
 
-#yxzpapeiut .gt_from_md > :first-child {
+#mabxjiytid .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#yxzpapeiut .gt_from_md > :last-child {
+#mabxjiytid .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#yxzpapeiut .gt_row {
+#mabxjiytid .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1012,7 +1008,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   overflow-x: hidden;
 }
 
-#yxzpapeiut .gt_stub {
+#mabxjiytid .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1025,7 +1021,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   padding-right: 5px;
 }
 
-#yxzpapeiut .gt_stub_row_group {
+#mabxjiytid .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1039,15 +1035,15 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   vertical-align: top;
 }
 
-#yxzpapeiut .gt_row_group_first td {
+#mabxjiytid .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#yxzpapeiut .gt_row_group_first th {
+#mabxjiytid .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#yxzpapeiut .gt_summary_row {
+#mabxjiytid .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1057,16 +1053,16 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   padding-right: 5px;
 }
 
-#yxzpapeiut .gt_first_summary_row {
+#mabxjiytid .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_first_summary_row.thick {
+#mabxjiytid .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#yxzpapeiut .gt_last_summary_row {
+#mabxjiytid .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1076,7 +1072,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-bottom-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_grand_summary_row {
+#mabxjiytid .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1086,7 +1082,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   padding-right: 5px;
 }
 
-#yxzpapeiut .gt_first_grand_summary_row {
+#mabxjiytid .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1096,7 +1092,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-top-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_last_grand_summary_row_top {
+#mabxjiytid .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1106,11 +1102,11 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-bottom-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_striped {
+#mabxjiytid .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#yxzpapeiut .gt_table_body {
+#mabxjiytid .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1119,7 +1115,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-bottom-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_footnotes {
+#mabxjiytid .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1133,7 +1129,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-right-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_footnote {
+#mabxjiytid .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1142,7 +1138,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   padding-right: 5px;
 }
 
-#yxzpapeiut .gt_sourcenotes {
+#mabxjiytid .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1156,7 +1152,7 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   border-right-color: #D3D3D3;
 }
 
-#yxzpapeiut .gt_sourcenote {
+#mabxjiytid .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1164,72 +1160,72 @@ R&gt; modelsummary(list(model1_out, model2_out, model3_out),
   padding-right: 5px;
 }
 
-#yxzpapeiut .gt_left {
+#mabxjiytid .gt_left {
   text-align: left;
 }
 
-#yxzpapeiut .gt_center {
+#mabxjiytid .gt_center {
   text-align: center;
 }
 
-#yxzpapeiut .gt_right {
+#mabxjiytid .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#yxzpapeiut .gt_font_normal {
+#mabxjiytid .gt_font_normal {
   font-weight: normal;
 }
 
-#yxzpapeiut .gt_font_bold {
+#mabxjiytid .gt_font_bold {
   font-weight: bold;
 }
 
-#yxzpapeiut .gt_font_italic {
+#mabxjiytid .gt_font_italic {
   font-style: italic;
 }
 
-#yxzpapeiut .gt_super {
+#mabxjiytid .gt_super {
   font-size: 65%;
 }
 
-#yxzpapeiut .gt_footnote_marks {
+#mabxjiytid .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#yxzpapeiut .gt_asterisk {
+#mabxjiytid .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#yxzpapeiut .gt_indent_1 {
+#mabxjiytid .gt_indent_1 {
   text-indent: 5px;
 }
 
-#yxzpapeiut .gt_indent_2 {
+#mabxjiytid .gt_indent_2 {
   text-indent: 10px;
 }
 
-#yxzpapeiut .gt_indent_3 {
+#mabxjiytid .gt_indent_3 {
   text-indent: 15px;
 }
 
-#yxzpapeiut .gt_indent_4 {
+#mabxjiytid .gt_indent_4 {
   text-indent: 20px;
 }
 
-#yxzpapeiut .gt_indent_5 {
+#mabxjiytid .gt_indent_5 {
   text-indent: 25px;
 }
 
-#yxzpapeiut .katex-display {
+#mabxjiytid .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#yxzpapeiut div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#mabxjiytid div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1339,23 +1335,23 @@ R&gt; modelsummary(models,
 +              output = "gt") 
 ```
 
-<div id="axmpcasent" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#axmpcasent table {
+<div id="gzegrijtzw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#gzegrijtzw table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#axmpcasent thead, #axmpcasent tbody, #axmpcasent tfoot, #axmpcasent tr, #axmpcasent td, #axmpcasent th {
+#gzegrijtzw thead, #gzegrijtzw tbody, #gzegrijtzw tfoot, #gzegrijtzw tr, #gzegrijtzw td, #gzegrijtzw th {
   border-style: none;
 }
 
-#axmpcasent p {
+#gzegrijtzw p {
   margin: 0;
   padding: 0;
 }
 
-#axmpcasent .gt_table {
+#gzegrijtzw .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1381,12 +1377,12 @@ R&gt; modelsummary(models,
   border-left-color: #D3D3D3;
 }
 
-#axmpcasent .gt_caption {
+#gzegrijtzw .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#axmpcasent .gt_title {
+#gzegrijtzw .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1398,7 +1394,7 @@ R&gt; modelsummary(models,
   border-bottom-width: 0;
 }
 
-#axmpcasent .gt_subtitle {
+#gzegrijtzw .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1410,7 +1406,7 @@ R&gt; modelsummary(models,
   border-top-width: 0;
 }
 
-#axmpcasent .gt_heading {
+#gzegrijtzw .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1422,13 +1418,13 @@ R&gt; modelsummary(models,
   border-right-color: #D3D3D3;
 }
 
-#axmpcasent .gt_bottom_border {
+#gzegrijtzw .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#axmpcasent .gt_col_headings {
+#gzegrijtzw .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1443,7 +1439,7 @@ R&gt; modelsummary(models,
   border-right-color: #D3D3D3;
 }
 
-#axmpcasent .gt_col_heading {
+#gzegrijtzw .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1463,7 +1459,7 @@ R&gt; modelsummary(models,
   overflow-x: hidden;
 }
 
-#axmpcasent .gt_column_spanner_outer {
+#gzegrijtzw .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1475,15 +1471,15 @@ R&gt; modelsummary(models,
   padding-right: 4px;
 }
 
-#axmpcasent .gt_column_spanner_outer:first-child {
+#gzegrijtzw .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#axmpcasent .gt_column_spanner_outer:last-child {
+#gzegrijtzw .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#axmpcasent .gt_column_spanner {
+#gzegrijtzw .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1495,11 +1491,11 @@ R&gt; modelsummary(models,
   width: 100%;
 }
 
-#axmpcasent .gt_spanner_row {
+#gzegrijtzw .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#axmpcasent .gt_group_heading {
+#gzegrijtzw .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1525,7 +1521,7 @@ R&gt; modelsummary(models,
   text-align: left;
 }
 
-#axmpcasent .gt_empty_group_heading {
+#gzegrijtzw .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1540,15 +1536,15 @@ R&gt; modelsummary(models,
   vertical-align: middle;
 }
 
-#axmpcasent .gt_from_md > :first-child {
+#gzegrijtzw .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#axmpcasent .gt_from_md > :last-child {
+#gzegrijtzw .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#axmpcasent .gt_row {
+#gzegrijtzw .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1567,7 +1563,7 @@ R&gt; modelsummary(models,
   overflow-x: hidden;
 }
 
-#axmpcasent .gt_stub {
+#gzegrijtzw .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1580,7 +1576,7 @@ R&gt; modelsummary(models,
   padding-right: 5px;
 }
 
-#axmpcasent .gt_stub_row_group {
+#gzegrijtzw .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1594,15 +1590,15 @@ R&gt; modelsummary(models,
   vertical-align: top;
 }
 
-#axmpcasent .gt_row_group_first td {
+#gzegrijtzw .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#axmpcasent .gt_row_group_first th {
+#gzegrijtzw .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#axmpcasent .gt_summary_row {
+#gzegrijtzw .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1612,16 +1608,16 @@ R&gt; modelsummary(models,
   padding-right: 5px;
 }
 
-#axmpcasent .gt_first_summary_row {
+#gzegrijtzw .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#axmpcasent .gt_first_summary_row.thick {
+#gzegrijtzw .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#axmpcasent .gt_last_summary_row {
+#gzegrijtzw .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1631,7 +1627,7 @@ R&gt; modelsummary(models,
   border-bottom-color: #D3D3D3;
 }
 
-#axmpcasent .gt_grand_summary_row {
+#gzegrijtzw .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1641,7 +1637,7 @@ R&gt; modelsummary(models,
   padding-right: 5px;
 }
 
-#axmpcasent .gt_first_grand_summary_row {
+#gzegrijtzw .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1651,7 +1647,7 @@ R&gt; modelsummary(models,
   border-top-color: #D3D3D3;
 }
 
-#axmpcasent .gt_last_grand_summary_row_top {
+#gzegrijtzw .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1661,11 +1657,11 @@ R&gt; modelsummary(models,
   border-bottom-color: #D3D3D3;
 }
 
-#axmpcasent .gt_striped {
+#gzegrijtzw .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#axmpcasent .gt_table_body {
+#gzegrijtzw .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1674,7 +1670,7 @@ R&gt; modelsummary(models,
   border-bottom-color: #D3D3D3;
 }
 
-#axmpcasent .gt_footnotes {
+#gzegrijtzw .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1688,7 +1684,7 @@ R&gt; modelsummary(models,
   border-right-color: #D3D3D3;
 }
 
-#axmpcasent .gt_footnote {
+#gzegrijtzw .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1697,7 +1693,7 @@ R&gt; modelsummary(models,
   padding-right: 5px;
 }
 
-#axmpcasent .gt_sourcenotes {
+#gzegrijtzw .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1711,7 +1707,7 @@ R&gt; modelsummary(models,
   border-right-color: #D3D3D3;
 }
 
-#axmpcasent .gt_sourcenote {
+#gzegrijtzw .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1719,72 +1715,72 @@ R&gt; modelsummary(models,
   padding-right: 5px;
 }
 
-#axmpcasent .gt_left {
+#gzegrijtzw .gt_left {
   text-align: left;
 }
 
-#axmpcasent .gt_center {
+#gzegrijtzw .gt_center {
   text-align: center;
 }
 
-#axmpcasent .gt_right {
+#gzegrijtzw .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#axmpcasent .gt_font_normal {
+#gzegrijtzw .gt_font_normal {
   font-weight: normal;
 }
 
-#axmpcasent .gt_font_bold {
+#gzegrijtzw .gt_font_bold {
   font-weight: bold;
 }
 
-#axmpcasent .gt_font_italic {
+#gzegrijtzw .gt_font_italic {
   font-style: italic;
 }
 
-#axmpcasent .gt_super {
+#gzegrijtzw .gt_super {
   font-size: 65%;
 }
 
-#axmpcasent .gt_footnote_marks {
+#gzegrijtzw .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#axmpcasent .gt_asterisk {
+#gzegrijtzw .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#axmpcasent .gt_indent_1 {
+#gzegrijtzw .gt_indent_1 {
   text-indent: 5px;
 }
 
-#axmpcasent .gt_indent_2 {
+#gzegrijtzw .gt_indent_2 {
   text-indent: 10px;
 }
 
-#axmpcasent .gt_indent_3 {
+#gzegrijtzw .gt_indent_3 {
   text-indent: 15px;
 }
 
-#axmpcasent .gt_indent_4 {
+#gzegrijtzw .gt_indent_4 {
   text-indent: 20px;
 }
 
-#axmpcasent .gt_indent_5 {
+#gzegrijtzw .gt_indent_5 {
   text-indent: 25px;
 }
 
-#axmpcasent .katex-display {
+#gzegrijtzw .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#axmpcasent div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#gzegrijtzw div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1944,7 +1940,7 @@ R&gt; modelsummary(
 R&gt; modelplot(model_out)
 ```
 
-&lt;img src="08-modeling_files/figure-html/unnamed-chunk-25-1.png" alt="" width="450px" style="display: block; margin: auto;" /&gt;
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-23-1.png" alt="" width="450px" style="display: block; margin: auto;" /&gt;
 ]
 
 ---
@@ -1976,7 +1972,7 @@ R&gt; modelplot(model_out,
 +   theme_minimal()
 ```
 
-&lt;img src="08-modeling_files/figure-html/unnamed-chunk-26-1.png" alt="" width="550px" style="display: block; margin: auto;" /&gt;
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-24-1.png" alt="" width="550px" style="display: block; margin: auto;" /&gt;
 ]
 
 ---
@@ -2075,7 +2071,7 @@ R&gt; modelplot(model_out_std)
 class: inverse, center, middle
 name: manymodels
 
-# Bonus: Fitting many models
+# Fitting many models
 
 &lt;html&gt;&lt;div style='float:left'&gt;&lt;/div&gt;&lt;hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/&gt;&lt;/html&gt;
 
@@ -2290,7 +2286,7 @@ R&gt; models_list[[1]]
    
    Coefficients:
    (Intercept)    dep_delay  
-        -6.142        1.033
+        -5.836        1.011
 ```
 
 
@@ -2318,7 +2314,7 @@ R&gt; models_broom_df |&gt;
 +   facet_grid(cols = vars(term), scales = "free_y")
 ```
 
-&lt;img src="08-modeling_files/figure-html/unnamed-chunk-39-1.png" alt="" style="display: block; margin: auto;" /&gt;
+&lt;img src="08-modeling_files/figure-html/unnamed-chunk-37-1.png" alt="" style="display: block; margin: auto;" /&gt;
 
 
 
@@ -2387,7 +2383,7 @@ R&gt; models_broom_df |&gt;
 ---
 # Summary
 
-Some final bits of advice that didn't fit on the main slides:
+## Some final bits of advice that didn't fit on the main slides
 
 1. Before you actually run models, **describe the data**. That's not only for you. Every report should begin with a visualization of the phenomena of interest, plotting the rawest data available that is also legible in a graph.
 
@@ -2397,7 +2393,7 @@ Some final bits of advice that didn't fit on the main slides:
 
 4. **Never judge a model on the data it was trained on**. Split first, resample to compare and tune, touch the test set once.
 
-5. **Table results with care**. Please don’t just report which effects were significant and which were non-significant. Please don’t report just p-values. Please don’t just report the estimated effects of the significant effects. Report all estimates that you also discuss.
+5. **Table results with care**. Please don’t just report which effects were significant and which were non-significant. Please don’t report just p-values. Please don’t just report the estimated effects of the significant effects.
 
 6. **Invest more time in refining plots** than you planned to. Good figures aren't only plots. Think of informative headers and notes. Ideally, your figures are self-contained.
 

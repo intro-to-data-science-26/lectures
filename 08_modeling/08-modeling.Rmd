@@ -67,7 +67,7 @@ library(kableExtra)
 
 3. [Reporting modeling results](#reporting)
 
-4. [Bonus: Fitting many models](#manymodels)
+4. [Fitting many models](#manymodels)
 
 
 
@@ -440,6 +440,8 @@ Preprocessing that *learns* from data (centering, dummy coding, imputation) is e
 Splitting, resampling, and tuning are all integrated in one workflow. 
 ]
 
+<hr style="width: 75%; margin: .5em auto; background-color: black; height: 1px;">
+
 Note that `tidymodels` is **not a modeling method.** You still need to know what a model does. And tidymodels is built for *predictive* modeling; for *inferential* work, base R plus `broom` are fine.
 
 We'll now look at the intuition behind each step and at a minimal example (check out the labs for details!).
@@ -483,45 +485,30 @@ predict(lm_fit, new_data = tibble(dep_delay = c(0, 60),
 .pull-left[
 ### The idea
 
-- Models rarely take raw data: dummy coding, transformations, feature extraction, missing values, rare categories.
-- Some of these steps *learn* from the data (a mean, the set of categories). If they learn from *all* data, test-set information leaks into training and evaluation becomes too optimistic.
-- **Split first.** Then write a **recipe**: a specification of preprocessing steps, estimated on the training data and applied unchanged to new data.
+- Models rarely take raw data: categorical predictors need dummy coding, rare categories get lumped together, variables get transformed.
+- Some of these steps *learn* from the data (which categories are rare, a mean for centering). If they learn from *all* data, test-set information leaks into training and evaluation becomes too optimistic.
+- **Split first.** Then write a **recipe**: a list of preprocessing steps, estimated on the training data and applied unchanged to new data.
 - A **workflow** bundles recipe and model, so that fitting and predicting always use both together.
 ]
 
 .pull-right[
 
-Let's switch to a classification task: is a flight more than 30 minutes late? (20,000 sampled flights, 7 predictors.)
-
-```{r, echo = FALSE}
-set.seed(123)
-flights_small <- flights |>
-  mutate(late = factor(ifelse(arr_delay >= 30, "late", "on_time")),
-         date = lubridate::as_date(time_hour)) |>
-  select(late, dep_time, flight, origin, dest, air_time, distance, carrier, date, time_hour) |>
-  drop_na() |>
-  mutate(across(where(is.character), as.factor)) |>
-  slice_sample(n = 20000)
-```
+We extend the model with more predictors: distance, origin airport, carrier, and scheduled hour of departure.
 
 ```{r}
-flights_split <- initial_split(flights_small,
-                               strata = late)
-train_data <- training(flights_split)
+set.seed(123)
+fl_split <- initial_split(fl)
+train_data <- training(fl_split)
 
-flights_rec <- recipe(late ~ .,
-                      data = train_data) |>
-  update_role(flight, time_hour, new_role = "ID") |>
-  step_date(date, features = c("dow", "month"),
-            keep_original_cols = FALSE) |>
-  step_other(all_nominal_predictors(),
-             threshold = 0.01) |>
-  step_dummy(all_nominal_predictors()) |>
-  step_zv(all_predictors())
+fl_rec <- recipe(arr_delay ~ dep_delay + hour +
+                   distance + origin + carrier,
+                 data = train_data) |>
+  step_other(carrier, threshold = 0.05) |>
+  step_dummy(all_nominal_predictors())
 
-lr_wf <- workflow() |>
-  add_model(logistic_reg() |> set_engine("glm")) |>
-  add_recipe(flights_rec)
+lm_wf <- workflow() |>
+  add_model(lm_mod) |>
+  add_recipe(fl_rec)
 ```
 ]
 
@@ -529,44 +516,33 @@ lr_wf <- workflow() |>
 ---
 # Step 3: Evaluate the model
 
-```{r, cache = TRUE, echo = FALSE}
-rf_mod <- rand_forest(trees = 500) |>
-  set_engine("ranger") |>
-  set_mode("classification")
-rf_wf <- lr_wf |> update_model(rf_mod)
-set.seed(234)
-rf_fit <- rf_wf |> fit(data = train_data)
-train_auc <- augment(rf_fit, train_data) |> roc_auc(truth = late, .pred_late) |> pull(.estimate)
-```
-
 .pull-left[
 ### The idea
 
-- We want to know how a model performs on *new* data.
-- **Evaluating on the training data misleads:** flexible models can memorize it (the random forest on the right reaches an ROC AUC of `r round(train_auc, 2)` on its own training data).
+- We want to know how a model performs on *new* data, not on the data it was fitted to.
+- **Evaluating on the training data misleads:** every extra predictor improves the fit, even if it only picks up noise. Flexible models can memorize the training data.
 - **Evaluating repeatedly on the test set misleads, too:** the test set becomes part of model selection.
-- **Resampling:** create many splits *within the training set* (e.g., $v$-fold cross-validation), fit on one part, score on the other, average. Use the resampling estimates to compare models; keep the test set for one final check.
-- Choose the metric *before* looking at results. Accuracy can mislead with imbalanced outcomes (here, 84% of flights are on time).
+- **Resampling:** split the training set into $v$ folds, fit on $v-1$ of them, score on the held-out fold, repeat, average. Use these estimates to compare models; keep the test set for one final check.
+- Here we compare the one-predictor model with the extended one. RMSE is the typical prediction error in minutes.
 ]
 
 .pull-right[
 
-```{r, cache = TRUE}
-rf_mod <- rand_forest(trees = 500) |>
-  set_engine("ranger") |>
-  set_mode("classification")
-rf_wf <- lr_wf |> update_model(rf_mod)
-
-set.seed(345)
+```{r}
+set.seed(234)
 folds <- vfold_cv(train_data, v = 5)
-metrics <- metric_set(roc_auc)
-rf_res <- fit_resamples(rf_wf, folds,
-                        metrics = metrics)
-lr_res <- fit_resamples(lr_wf, folds,
-                        metrics = metrics)
-bind_rows(rf = collect_metrics(rf_res),
-          logit = collect_metrics(lr_res),
+
+simple_wf <- workflow() |>
+  add_model(lm_mod) |>
+  add_formula(arr_delay ~ dep_delay)
+
+simple_res <- fit_resamples(simple_wf, folds)
+lm_res <- fit_resamples(lm_wf, folds)
+
+bind_rows(simple = collect_metrics(simple_res),
+          extended = collect_metrics(lm_res),
           .id = "model") |>
+  filter(.metric == "rmse") |>
   select(model, mean, std_err)
 ```
 ]
@@ -578,30 +554,29 @@ bind_rows(rf = collect_metrics(rf_res),
 .pull-left[
 ### The idea
 
-- **Parameters** are learned from data (coefficients, split points). **Hyperparameters** must be set *before* training: the penalty in a lasso, the depth of a tree, the number of neighbors in $k$-NN.
-- They typically control complexity, i.e., the trade-off between underfitting and overfitting.
-- **Tuning:** mark hyperparameters with `tune()`, try a grid of candidates on the resamples, pick the best, plug it in, and fit *once* more on all training data. `last_fit()` then evaluates on the test set, the first and only time it is used.
-- If test-set and resampling results agree, the tuning did not overfit. Here, the test-set ROC AUC is close to the resampling estimate.
+- **Parameters** are learned from data (the coefficients). **Hyperparameters** are set *before* training and control model complexity.
+- Example: the **lasso** penalizes the size of the coefficients. The larger the penalty, the more coefficients are set to exactly zero. How large should it be? Tune it.
+- **Tuning:** mark the hyperparameter with `tune()`, try a grid of candidates on the resamples, pick the best, and fit *once* more on all training data. `last_fit()` then scores the test set, the first and only time it is used.
+- Here the best penalty is small: with 5,000 flights and few predictors, there is little to regularize. The test-set RMSE matches the resampling estimate from the previous slide.
 ]
 
 .pull-right[
 
-```{r, cache = TRUE}
-tree_mod <-
-  decision_tree(cost_complexity = tune(),
-                tree_depth = tune()) |>
-  set_engine("rpart") |> set_mode("classification")
-tree_wf <- lr_wf |> update_model(tree_mod)
-set.seed(567)
-tree_res <- tune_grid(tree_wf, folds, grid = 25,
-                      metrics = metrics)
-best <- select_best(tree_res,
-                    metric = "roc_auc")
-final_fit <- tree_wf |>
-  finalize_workflow(best) |>
-  last_fit(flights_split)
+```{r, warning = FALSE, message = FALSE}
+lasso_mod <- linear_reg(penalty = tune(),
+                        mixture = 1) |>
+  set_engine("glmnet")
+lasso_wf <- lm_wf |> update_model(lasso_mod)
+
+grid <- tibble(penalty = 10^seq(-2, 2, by = 0.2))
+lasso_res <- tune_grid(lasso_wf, folds,
+                       grid = grid)
+best <- select_best(lasso_res, metric = "rmse")
+best$penalty
+final_fit <- lasso_wf |>
+  finalize_workflow(best) |> last_fit(fl_split)
 collect_metrics(final_fit) |>
-  select(.metric, .estimate)
+  filter(.metric == "rmse") |> pull(.estimate)
 ```
 ]
 
@@ -610,38 +585,40 @@ collect_metrics(final_fit) |>
 # The whole workflow in one slide
 
 .pull-left[
+.font80[
 
 ```{r, eval = FALSE, prompt = FALSE}
 # split
-flights_split <- initial_split(flights_small)
-train_data <- training(flights_split)
+fl_split <- initial_split(fl)
+train_data <- training(fl_split)
 folds <- vfold_cv(train_data, v = 5)
-flights_rec <- recipe(late ~ ., data = train_data) |>
-  update_role(flight, time_hour, new_role = "ID") |>
-  step_date(date, features = c("dow", "month")) |>
-  step_other(all_nominal_predictors()) |>
-  step_dummy(all_nominal_predictors()) |>
-  step_zv(all_predictors())
-# build (with open hyperparameters)
-tree_spec <- decision_tree(cost_complexity = tune(),
-                           tree_depth = tune()) |>
-  set_engine("rpart") |> set_mode("classification")
-tree_wf <- workflow() |>
-  add_model(tree_spec) |> add_recipe(flights_rec)
+# preprocess
+fl_rec <- recipe(arr_delay ~ dep_delay + hour +
+                   distance + origin + carrier,
+                 data = train_data) |>
+  step_other(carrier, threshold = 0.05) |>
+  step_dummy(all_nominal_predictors())
+# build (with open hyperparameter)
+lasso_mod <- linear_reg(penalty = tune(), mixture = 1) |>
+  set_engine("glmnet")
+lasso_wf <- workflow() |>
+  add_model(lasso_mod) |> add_recipe(fl_rec)
 # tune, evaluate, last fit
-tree_res <- tree_wf |> tune_grid(folds, grid = 25)
-best <- select_best(tree_res, metric = "roc_auc")
-final_fit <- tree_wf |> finalize_workflow(best) |>
-  last_fit(flights_split)
+grid <- tibble(penalty = 10^seq(-2, 2, by = 0.2))
+lasso_res <- tune_grid(lasso_wf, folds, grid = grid)
+best <- select_best(lasso_res, metric = "rmse")
+final_fit <- lasso_wf |> finalize_workflow(best) |>
+  last_fit(fl_split)
 collect_metrics(final_fit)
 ```
+]
 ]
 
 .pull-right[
 
 ### Take it from there
 
-- To try another model: replace `tree_spec`. To try other features: edit the recipe. Everything downstream stays the same.
+- To try another model: replace `lasso_mod` (e.g., with `rand_forest()`). To try other features: edit the recipe. Everything downstream stays the same.
 - Article 5 of [Get Started](https://www.tidymodels.org/start/case-study/) runs this cycle on hotel bookings with a penalized logistic regression and a random forest, comparing them via ROC curves.
 - What we didn't cover: `workflowsets` (many model/recipe combinations at once), iterative tuning (`tune_bayes()`), ensembles (`stacks`). See [*Tidy Modeling with R*](https://www.tmwr.org/).
 ]
@@ -1097,7 +1074,7 @@ modelplot(model_out_std2, coef_omit = "Interc", coef_map = cm) +
 class: inverse, center, middle
 name: manymodels
 
-# Bonus: Fitting many models
+# Fitting many models
 
 <html><div style='float:left'></div><hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/></html>
 
@@ -1385,7 +1362,7 @@ models_broom_df |>
 ---
 # Summary
 
-Some final bits of advice that didn't fit on the main slides:
+## Some final bits of advice that didn't fit on the main slides
 
 1. Before you actually run models, **describe the data**. That's not only for you. Every report should begin with a visualization of the phenomena of interest, plotting the rawest data available that is also legible in a graph.
 
@@ -1395,7 +1372,7 @@ Some final bits of advice that didn't fit on the main slides:
 
 4. **Never judge a model on the data it was trained on**. Split first, resample to compare and tune, touch the test set once.
 
-5. **Table results with care**. Please don’t just report which effects were significant and which were non-significant. Please don’t report just p-values. Please don’t just report the estimated effects of the significant effects. Report all estimates that you also discuss.
+5. **Table results with care**. Please don’t just report which effects were significant and which were non-significant. Please don’t report just p-values. Please don’t just report the estimated effects of the significant effects.
 
 6. **Invest more time in refining plots** than you planned to. Good figures aren't only plots. Think of informative headers and notes. Ideally, your figures are self-contained.
 
