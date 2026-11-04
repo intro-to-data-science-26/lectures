@@ -970,7 +970,7 @@ residuals(model_out)[1:5]
 coef(model_out)
 fitted.values(model_out)[1:5]
 residuals(model_out)[1:5]
-model.matrix(model_out) %>% head(4)
+model.matrix(model_out) |> head(4)
 ```
 ]
 
@@ -1119,7 +1119,7 @@ broom::glance(model_out)
   - standard errors of fitted values (`.se.fit`; optional)
 
 ```{r, eval = TRUE}
-broom::augment(model_out, se_fit = TRUE) %>% head(3)
+broom::augment(model_out, se_fit = TRUE) |> head(3)
 ```
 
 --
