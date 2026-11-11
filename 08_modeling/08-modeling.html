@@ -1163,7 +1163,7 @@ R&gt; residuals(model_out)[1:5]
 ```
 
 ``` r
-R&gt; model.matrix(model_out) %&gt;% head(4)
+R&gt; model.matrix(model_out) |&gt; head(4)
 ```
 
 ```
@@ -1412,7 +1412,7 @@ R&gt; broom::glance(model_out)
 
 
 ``` r
-R&gt; broom::augment(model_out, se_fit = TRUE) %&gt;% head(3)
+R&gt; broom::augment(model_out, se_fit = TRUE) |&gt; head(3)
 ```
 
 ```
