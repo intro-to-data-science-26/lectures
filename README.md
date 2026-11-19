@@ -26,7 +26,7 @@
 
 11. Data science ethics \[[**.html**](https://raw.githack.com/intro-to-data-science-26/lectures/main/11_ethics/11-ethics.html) | [**.pdf**](https://raw.githack.com/intro-to-data-science-26/lectures/main/11_ethics/11-ethics.pdf) | [**.Rmd**](https://raw.githack.com/intro-to-data-science-26/lectures/main/11_ethics/11-ethics.Rmd)\]
 
-12. AI and data science \[materials to follow\]
+12. AI as part of the data science workflow \[[**.html**](https://raw.githack.com/intro-to-data-science-26/lectures/main/12_ai/12-ai.html) | [**.pdf**](https://raw.githack.com/intro-to-data-science-26/lectures/main/12_ai/12-ai.pdf) | [**.Rmd**](https://raw.githack.com/intro-to-data-science-26/lectures/main/12_ai/12-ai.Rmd)\]
 
 13. [BONUS] R and the tidyverse \[[**.html**](https://raw.githack.com/intro-to-data-science-26/lectures/main/13_tidyverse/13-tidyverse.html) | [**.pdf**](https://raw.githack.com/intro-to-data-science-26/lectures/main/13_tidyverse/13-tidyverse.pdf) | [**.Rmd**](https://raw.githack.com/intro-to-data-science-26/lectures/main/13_tidyverse/13-tidyverse.Rmd)\]
 

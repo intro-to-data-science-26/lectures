@@ -245,7 +245,7 @@ background-image: url("pics/clickworker.png")
 
 <br> 
 
-`Source` [Muldoon, J., & Apostolidis, P. (2023). ‘Neither work nor leisure’: Motivations of microworkers in the United Kingdom on three digital platforms. <i>New Media & Society</i>, 14614448231183942.](https://journals.sagepub.com/doi/full/10.1177/14614448231183942)
+`Source` [Muldoon, J., & Apostolidis, P. (2025). ‘Neither work nor leisure’: Motivations of microworkers in the United Kingdom on three digital platforms. <i>New Media & Society</i>, 27(2), 747–769.](https://journals.sagepub.com/doi/full/10.1177/14614448231183942)
 
 
 
@@ -271,7 +271,7 @@ background-image: url("pics/clickworker.png")
 
 <br>
 
-`Source` [Muldoon, J., & Apostolidis, P. (2023). ‘Neither work nor leisure’: Motivations of microworkers in the United Kingdom on three digital platforms. <i>New Media & Society</i>, 14614448231183942.](https://journals.sagepub.com/doi/full/10.1177/14614448231183942)
+`Source` [Muldoon, J., & Apostolidis, P. (2025). ‘Neither work nor leisure’: Motivations of microworkers in the United Kingdom on three digital platforms. <i>New Media & Society</i>, 27(2), 747–769.](https://journals.sagepub.com/doi/full/10.1177/14614448231183942)
 
 
 
@@ -359,6 +359,32 @@ background-size: contain
 background-color: #000000
 
 # How do I communicate results honestly?
+
+
+
+---
+# Outlook: How do I use LLMs responsibly?
+
+.pull-left-wide[
+- LLMs now touch **every stage** of the pipeline: they write and debug code, label and summarize data, draft text, and even stand in as "participants".
+- This raises the same everyday questions in new clothes:
+  - **Consent and privacy**: Which data am I sending to a third-party model? Did participants agree to that?
+  - **Intellectual property**: On whose work was the model trained, and who owns the output?
+  - **Honesty and accountability**: Do I understand (and can I vouch for) the code and claims a model produced?
+  - **Transparency**: Do I disclose where and how AI tools were used?
+  - **Justice**: Who does the labeling, who benefits, who bears the costs?
+- **Rule of thumb**: You are responsible for everything you ship, no matter who or what generated it.
+
+→ We'll dig into all of this in **Session 12: Data science and AI**.
+]
+
+.pull-right-small-center[
+<div align="center">
+<br><br>
+<img src="pics/xkcd-1838-ml.png" height=350>
+</div>
+`Source` [xkcd.com](https://xkcd.com/1838/)
+]
 
 
 
@@ -771,11 +797,11 @@ If obtaining full informed consent is not possible, for example, when informed c
 .pull-left[
 ### Research ethics at the Hertie School
 
-- Research Ethics Committee and Research Ethics Review Policy in place since Summer 2022
+- Research Ethics Committee and Research Ethics Review Policy in place since 2022
 - Open to all members of the Hertie School, including students!
 - Ethics procedure mandatory for all research projects involving human subjects, **including your Master's thesis**!
 - Three stages: self-assessment, review by the Research Ethics Officer, full review by the Research Ethics Committee
-- Check out the [Moodle page](https://moodle.hertie-school.org/course/section.php?id=36396) on research ethics!
+- Check out the [Library page](https://www.hertie-school.org/en/library/publications/publishing-and-research-data) on research ethics!
 ]
 
 .pull-right[
@@ -791,7 +817,7 @@ If obtaining full informed consent is not possible, for example, when informed c
 .pull-left[
 ### Research ethics at the Hertie School
 
-- Research Ethics Committee and Research Ethics Review Policy in place since Summer 2022
+- Research Ethics Committee and Research Ethics Review Policy in place since 2022
 - Open to all members of the Hertie School, including students!
 - Ethics procedure mandatory for all research projects involving human subjects, **including your Master's thesis**!
 - Three stages: self-assessment, review by the Research Ethics Officer, full review by the Research Ethics Committee
