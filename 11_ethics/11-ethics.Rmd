@@ -195,7 +195,7 @@ background-color: #000000
 .pull-left-small-center[
 <br><br>
 <div align="center" class = "font200">
-<b>Data science ethics </br>∋</b> </br> <b>Classical research ethics<sup>1</sup></b>
+<b>Data science ethics </br>⊂</b> </br> <b>Classical research ethics<sup>1</sup></b>
 </div>
 <br><br><br><sup>1</sup>Honesty, objectivity, prudence, openness, respect for intellectual property, social responsibility, ...
 ]
@@ -211,7 +211,7 @@ background-color: #000000
 .pull-left-small-center[
 <br><br>
 <div align="center" class = "font200">
-<b>Data science ethics </br>∋</b> </br> <b>The ethics of </br> everyday decisions </br> of data scientists</b>
+<b>Data science ethics </br>⊂</b> </br> <b>The ethics of </br> everyday decisions </br> of data scientists</b>
 </div>
 ]
 
