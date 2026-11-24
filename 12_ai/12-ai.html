@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Introduction to Data Science</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Simon Munzert" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/metropolis.css" rel="stylesheet" />
+    <link href="libs/remark-css/metropolis-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
+    <script src="https://tikzjax.com/v1/tikzjax.js"></script>
+    <link rel="stylesheet" href="../simons-touch.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Introduction to Data Science
+]
+.subtitle[
+## AI as part of the data science workflow
+]
+.author[
+### Simon Munzert
+]
+.institute[
+### Hertie School | <a href="https://github.com/intro-to-data-science-26">GRAD-C11/E1339</a>
+]
+
+---
+
+
+
+&lt;style type="text/css"&gt;
+@media print { # print out incremental slides; see https://stackoverflow.com/questions/56373198/get-xaringan-incremental-animations-to-print-to-pdf/56374619#56374619
+  .has-continuation {
+    display: block !important;
+  }
+}
+.bignum { font-size: 100px; font-weight: bold; color: #1D375B; line-height: 1.1; margin: 0; }
+.midnum { font-size: 60px; font-weight: bold; color: #1D375B; line-height: 1.1; margin: 18px 0 0 0; }
+.large { font-size: 125%; }
+.punch { font-size: 135%; margin-top: 25px; }
+.statement { font-size: 230%; line-height: 1.3; color: #FFFFFF; }
+.small-code pre code { font-size: 80%; }
+.clear { clear: both; }
+.center-code pre { display: table; margin-left: auto; margin-right: auto; }
+.red-slide { border-top-color: #C8102E !important; }
+.small { font-size: 80%; }
+&lt;/style&gt;
+
+
+
+
+# Table of contents
+
+&lt;br&gt;&lt;br&gt;
+
+1. [Where we are](#reality)
+
+2. [Models, harnesses, and tools](#tech)&lt;sup&gt;1&lt;/sup&gt;
+
+3. [Discussion](#discussion)
+
+4. [Bonus: LLMs in R with ellmer](#ellmer)
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+.footnote[&lt;sup&gt;1&lt;/sup&gt; Section 2 is &lt;s&gt;inspired by&lt;/s&gt; shamelessly stolen from Kieran Healy's session [Models, Harnesses, and Tools](https://mptc.io/content/12-content-llms.html) from his course *Modern Plain Text Computing* (Duke University). His session in turn builds on a series of posts by [Hadley Wickham](https://substack.hadley.nz/).]
+
+&lt;!-- ############################################ --&gt;
+---
+class: inverse, center, middle
+name: reality
+
+# Where we are
+
+&lt;html&gt;&lt;div style='float:left'&gt;&lt;/div&gt;&lt;hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/&gt;&lt;/html&gt;
+
+
+
+---
+# AI use among developers
+
+&lt;div align="center"&gt;
+&lt;img src="pics/ai-adoption-developers.png" height=450&gt;
+&lt;/div&gt;
+
+.footnote[`Source` Stack Overflow Developer Survey [2023](https://survey.stackoverflow.co/2023/#ai), [2024](https://survey.stackoverflow.co/2024/ai), [2025](https://survey.stackoverflow.co/2025/), [2026](https://survey.stackoverflow.co/2026/ai/data#ai-usage)]
+
+
+---
+# Meanwhile, on Stack Overflow
+
+&lt;div align="center"&gt;
+&lt;img src="pics/stackoverflow-questions.png" height=450&gt;
+&lt;/div&gt;
+
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+**Think about this:** March 2014: 207,169 questions. October 2026: 872. Models learned R in part from people answering on this platform. Who writes the answers of 2030?
+
+
+
+---
+# The job market for coders
+
+&lt;div align="center"&gt;
+&lt;img src="pics/job-postings-indeed.png" height=450&gt;
+&lt;/div&gt;
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+**Again, think about this:** Software postings are 18% below early 2020. All postings are about 6% above. But also, the fall for SD began **before ChatGPT**.
+
+
+
+
+---
+# Canaries in the coal mine?
+
+.pull-left[
+&lt;div align="center"&gt;
+&lt;img src="pics/brynjolfsson-canaries-abstract.png" height=460&gt;
+&lt;/div&gt;
+]
+
+.pull-right[
+&lt;div align="center"&gt;
+&lt;br&gt;
+&lt;img src="pics/canary-coal-mine.jpg" height=400&gt;
+&lt;/div&gt;
+
+&lt;div align="center" style="font-size:75%"&gt;Mining foreman with a canary for detecting carbon monoxide, 1928.&lt;br&gt;&lt;code&gt;Source&lt;/code&gt; &lt;a href="https://commons.wikimedia.org/wiki/File:Canary_coal_mine.jpg"&gt;US Bureau of Mines via Wikimedia Commons&lt;/a&gt;, public domain&lt;/div&gt;
+]
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+.footnote[`Source` [Brynjolfsson, Chandar, and Chen (2026)](https://digitaleconomy.stanford.edu/app/uploads/2026/08/Canaries_August2026.pdf)]
+
+
+
+
+
+---
+# New workflows: annotation
+
+.pull-left-wide[
+## Then
+
+- Write a codebook, hire and train coders, wait for weeks, pay per label
+
+## Now
+
+- Write a codebook as prompt, let the chatbot label 10k texts overnight.
+- [Gilardi et al. 2023](https://doi.org/10.1073/pnas.2305016120): Less than $0.003 per label, about **30 times cheaper** than crowd workers, and more accurate in one early comparison
+- But - [Baumann et al. 2025](https://arxiv.org/abs/2509.08825): LLM labels are not ground truth: rerun 21 published studies with 18 LLMs as annotators, and for about a third of the hypotheses the conclusion comes out wrong.
+- [Egami et al. 2023](https://arxiv.org/abs/2306.04746): Even labels that are 80 to 90% accurate bias downstream estimates. Correct for it with a hand-coded validation sample.
+]
+
+.pull-right-small[
+&lt;div align="center"&gt;
+&lt;img src="pics/gilardi-abstract.png" height=210&gt;
+&lt;br&gt;&lt;br&gt;
+&lt;img src="pics/egami-abstract.png" height=250&gt;
+&lt;/div&gt;
+]
+
+
+
+
+---
+# New workflows: debugging
+
+.pull-left-wide2[
+```r
+# Runs without an error, but the group
+# means are all identical. Why?
+survey |&gt;
+  group_by(region) |&gt;
+  mutate(income_c = income - mean(survey$income)) |&gt;
+  summarize(mean_income = mean(survey$income))
+```
+
+## Agents on real bugs
+
+- [SWE-bench](https://arxiv.org/abs/2310.06770): share of real GitHub issues the best model resolves on its own went from **2%** (2023) to [**97%**](https://www.vals.ai/benchmarks/swebench) (2026).
+- The benchmark is now [retired](https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified/): saturated, and partly contaminated.
+
+## In data analysis
+
+- [Galiani et al. 2026](https://www.nber.org/papers/w35588): in 40 econometric tasks, agents remove almost all **loud** failures (the code crashes), but only about half of the **silent** ones (the code runs, the number is wrong).
+]
+
+.pull-right-small2[
+&lt;div align="center"&gt;
+&lt;br&gt;&lt;br&gt;
+&lt;img src="pics/galiani-abstract.png" width=400&gt;
+&lt;/div&gt;
+]
+
+
+
+---
+# New workflows: the full analysis
+
+.pull-left-wide[
+## The experiment
+
+- January 2026: political scientist Andy Hall lets Claude Code **replicate and extend** a published paper on vote-by-mail. The agent collects new election data, reruns the models, writes the paper. Time: **under one hour** ([Hall, 2026](https://www.niskanencenter.org/can-ai-vibe-research-replace-social-science/)).
+
+## The audit
+
+- A PhD student redoes everything by hand ([Straus and Hall 2026](https://willimj3.github.io/vaill-coding-agents-workshop/papers/Straus_Hall_Claude_Audit.pdf)).
+- The replication of the original estimates matched **exactly**. Main extension estimate: 0.026, against 0.023 by hand.
+- But the fully **new** analyses had significantly more severe errors.
+- Doing that stuff without expert oversight is probably a bad idea still.
+]
+
+.pull-right-small[
+&lt;div align="center"&gt;
+&lt;br&gt;
+&lt;img src="pics/straus-hall-abstract.png" height=440&gt;
+&lt;/div&gt;
+]
+
+
+
+---
+# New workflows: the full paper
+
+.pull-left[
+## Papers without authors
+
+- [Project APE](https://ape.socialcatalystlab.org/), University of Zurich: agents wrote **1,000** policy evaluation papers in four months. In head-to-head matches against published economics papers, their win rate is 5%.
+- [The AI Scientist](https://www.nature.com/articles/s41586-026-10265-5): a fully AI-generated paper passed peer review at a machine learning workshop. The system is now published in *Nature*.
+- [Agents4Science](https://arxiv.org/abs/2511.15534): a conference where every accepted paper has an AI as first author, reviewed by AIs.
+
+## And the flood
+
+- Submissions to arXiv per month doubled within two years, from 20,569 to **40,363**. Authors are now [capped](https://blog.arxiv.org/2026/10/01/updated-rate-limit-policy/) at two submissions per month.
+]
+
+.pull-right[
+&lt;div align="center"&gt;
+&lt;br&gt;&lt;br&gt;
+&lt;img src="pics/ape-screenshot.png" width=540&gt;
+&lt;/div&gt;
+]
+
+
+
+---
+# New workflows: the full review
+
+.pull-left-wide[
+## AI as reviewer
+
+- [King and Worthington 2026](https://gking.harvard.edu/peerless/): 124 paper drafts, each with a review by a **well-paid human expert** and a review by an AI model.
+- Blind judges prefer the AI review in **87 to 100%** of the pairs, overall and in every review area. No fabricated sources, and about a third of the human rate of incorrect claims.
+- The largest deployment so far: the AAAI-26 conference added one labeled AI review to each of its 22,977 papers under full review.
+
+## But
+
+- The main judge was another AI model, backed by a sample of former journal editors.
+- Not measured: whether the paper gets **better**, and what happens to science if everybody switches.
+]
+
+.pull-right-small[
+&lt;div align="center"&gt;
+&lt;br&gt;&lt;br&gt;
+&lt;img src="pics/king-abstract.png" width=340&gt;
+&lt;/div&gt;
+]
+
+
+
+
+---
+class: inverse, middle
+
+&lt;div style="max-width:820px; margin:auto; font-size:150%; line-height:1.45; color:#FFFFFF;"&gt;
+&lt;span style="font-size:300%; line-height:0.4; color:#EB811B;"&gt;“&lt;/span&gt;&lt;br&gt;
+But Simon, haven't you followed the news last week?
+&lt;br&gt;&lt;br&gt;
+They solved the &lt;b&gt;Riemann hypothesis&lt;/b&gt;. And hundreds of other maths problems.
+&lt;br&gt;&lt;br&gt;
+Isn't this &lt;b&gt;Game Over&lt;/b&gt; for science? Shouldn't we all just fold and hang out in Leonida?
+&lt;br&gt;&lt;br&gt;
+&lt;span style="font-size:65%; color:#BBBBBB;"&gt;— All of you, probably 🙄&lt;/span&gt;
+&lt;/div&gt;
+
+
+
+---
+class: inverse, center, middle, red-slide
+background-color: #C8102E
+
+&lt;div style="color:#FFFFFF; font-weight:bold; letter-spacing:0.08em; line-height:1.2;"&gt;
+&lt;span style="font-size:200%;"&gt;♛&lt;/span&gt;&lt;br&gt;
+&lt;span style="font-size:270%;"&gt;KEEP CALM&lt;/span&gt;&lt;br&gt;
+&lt;span style="font-size:120%;"&gt;AND&lt;/span&gt;&lt;br&gt;
+&lt;span style="font-size:270%;"&gt;CARRY ON LEARNING&lt;/span&gt;
+&lt;/div&gt;
+
+&lt;br&gt;
+
+&lt;div style="color:#FFFFFF; font-size:115%; max-width:800px; margin:auto;"&gt;
+&lt;b&gt;My prediction (November 2026):&lt;/b&gt; &lt;br&gt;
+Our work will change massively (see previous slides), but we as humans will remain essential to the tasks to be solved in our [applied data science/social science/policy] domains. &lt;br&gt;&lt;br&gt;
+The messiness of empirics, policy, and politics will come to the rescue.
+&lt;br&gt;
+&lt;span style="font-size:80%;"&gt;(And might make your degrees even more valuable.)&lt;/span&gt;
+&lt;/div&gt;
+
+
+
+
+&lt;!-- ############################################ --&gt;
+---
+class: inverse, center, middle
+name: tech
+
+# Models, harnesses, and tools
+
+&lt;html&gt;&lt;div style='float:left'&gt;&lt;/div&gt;&lt;hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/&gt;&lt;/html&gt;
+
+
+
+---
+# Credit where credit is due
+
+.pull-left[
+&lt;div align="center"&gt;
+&lt;img src="pics/healy-mptc.png" height=380&gt;
+&lt;/div&gt;
+
+`Source` [Kieran Healy, Modern Plain Text Computing](https://mptc.io/content/12-content-llms.html)
+]
+
+.pull-right[
+&lt;div align="center"&gt;
+&lt;img src="pics/wickham-trenchcoat.png" height=380&gt;
+&lt;/div&gt;
+
+`Source` [Hadley Wickham, AI for data science](https://substack.hadley.nz/)
+]
+
+
+
+---
+# What an LLM is
+
+.pull-left[
+## What it is
+
+- A very large function: text in, text out
+- Strictly, *tokens* in, a probability distribution over the *next* token out. Sample one, append it, repeat.
+- Trained on an enormous amount of text (including a great deal of R code), then tuned to follow instructions and hold a conversation
+- Its weights are fixed after training. Its knowledge stops at a *training cutoff*.
+]
+
+--
+
+.pull-right[
+## What it is not
+
+On its own, the model *cannot*:
+
+- Run code
+- Look anything up
+- Read your files
+- Know today's date
+- Remember your last conversation
+- Learn anything, in the sense we usually use that word
+
+## When a chat app seems to do these things, the work is being done &lt;u&gt;outside the model&lt;/u&gt;.
+]
+
+
+
+
+---
+# The model as a web API
+
+.pull-left[
+You send a JSON request:
+
+```json
+POST https://api.anthropic.com/v1/messages
+
+{
+  "model": "claude-...",
+  "max_tokens": 1024,
+  "system": "You are a helpful assistant.",
+  "messages": [
+    {"role": "user",
+     "content": "What's the median of
+                 3, 5, 10, and 12?"}
+  ]
+}
+```
+]
+
+.pull-right[
+And you get JSON back:
+
+```json
+{
+  "role": "assistant",
+  "content": [
+    {"type": "text",
+     "text": "The median is 7.5."}
+  ],
+  "stop_reason": "end_turn",
+  "usage": {"input_tokens": 31,
+            "output_tokens": 9}
+}
+```
+
+Note the `usage` field. Tokens are the unit of both **cost** and **capacity**.
+]
+
+
+
+---
+# It is stateless
+
+.pull-left[
+## No memory
+
+- The model keeps no record of the conversation between requests.
+- So every request has to carry the *whole conversation so far*.
+- The "memory" in a chat window is just the prior turns being re-sent each time.
+
+## Consequences
+
+- Long conversations cost more per message, and get slower.
+- There is a hard ceiling: the *context window*.
+- Quality degrades as the context fills up with irrelevant material.
+]
+
+.pull-right[
+&lt;div align="center"&gt;
+&lt;img src="pics/memento.jpg" height=500&gt;
+&lt;/div&gt;
+
+]
+
+
+
+---
+# The model alone is confidently wrong about some things
+
+.pull-left[
+## Example
+
+Ask a bare model, with no tools, to multiply two eight-digit numbers.
+
+It will produce a number. The number will have the right number of digits, and the right first few digits. It will look entirely plausible.
+
+
+``` r
+R&gt; x &lt;- 20598162
+R&gt; y &lt;- 83106206
+R&gt; format(x * y, big.mark = ",", scientific = FALSE)
+```
+
+```
+   [1] "1,711,835,094,393,372"
+```
+
+One bare model answered `1,711,067,239,026,172`, which is close but wrong.
+]
+
+.pull-right[
+## Why the model gets this wrong
+
+- The model produces *plausible continuations*.
+- The same thing happens with R code:
+  - Arguments that don't exist, or that used to exist
+  - Superseded idioms: `%&gt;%`, `gather()`/`spread()`, `aes_string()`
+  - Functions from packages newer than the training cutoff
+- A better model helps less here than **giving the model a way to check its answer**.
+]
+
+
+
+---
+# The model and the harness
+
+.pull-left[
+## "Claude" the app is not "Claude" the model
+
+A **harness** is the program wrapped around the model. It:
+
+- Manages the conversation and re-sends it
+- Writes a system prompt
+- Reads context files from disk
+- Tells the model what tools exist
+- **Runs** the tools the model asks for
+- Enforces permissions
+- Gives you an interface
+]
+
+.pull-right[
+## Harnesses you may have met
+
+- **ChatGPT**, **claude.ai**, **Gemini** in the browser
+- **Claude Code**, **Codex**, **Gemini CLI**: coding agents in the terminal or the editor
+- **GitHub Copilot**, **Positron Assistant**, and now [**Posit Assistant in RStudio**](https://posit.co/blog/introducing-ai-in-rstudio)
+- **ellmer**, an R package: your R session becomes the harness
+
+The same underlying model behaves differently in each, because the harness decides what the model sees and what it can do.
+]
+
+
+
+---
+# Where things live
+
+.pull-left[
+## The basic logic
+
+.center-code[
+```
+You
+ ▲
+ ▼
+Harness  ◄── JSON over HTTPS ──►  Model
+ ▲
+ ▼
+Tools: files, R, shell, web
+```
+]
+
+- The **harness** holds the system prompt, context files, conversation history, and tool definitions. It runs the tools.
+- The **model** only ever receives text, and only ever returns text.
+- There is no secret lower-level language. It's natural-language text top to bottom.
+]
+
+.pull-right[
+## Who does what
+
+| Component                         | Provided by |
+|:----------------------------------|:------------|
+| Predicting the next token         | Model       |
+| System prompt                     | Harness     |
+| Re-sending earlier turns          | Harness     |
+| Reading `CLAUDE.md` / `AGENTS.md` | Harness     |
+| Describing the available tools    | Harness     |
+| Actually running a tool           | Harness     |
+| Asking you for permission         | Harness     |
+]
+
+
+
+---
+# Context files are just text
+
+[Healy's course repository](https://github.com/kjhealy/mptc) has an `AGENTS.md` file. Part of it:
+
+```markdown
+# Constraints
+
+- Some datasets used may be very large. Do NOT attempt to ingest them in
+  order to inspect them. Use the available local tools (R and its packages;
+  the package APIs that allow the data to be queried, your plugins and
+  skills, etc). You may extract very small samples (&lt;1000 rows) from data
+  files if it's necessary.
+
+- The user will handle git and other version control matters.
+```
+
+The harness pastes this into the context at the start of every session, which is how "project memory" works.
+
+**Skills** work the same way: folders of instructions that the harness loads only when relevant. A skill is just a Markdown file full of instructions written in English.
+
+
+
+---
+# Tools
+
+.pull-left[
+## What a tool is
+
+- A function that the **harness** runs for the **model**
+- The model sees only three things about it:
+  1. A name
+  2. A description, in plain English
+  3. A schema for its arguments
+- The model emits a structured request: "call `read_file` with `path = 'R/clean.R'`".
+- The harness runs it and sends the result back as text, in the next request.
+
+## Read tools and write tools
+
+- **Read tools** observe the world: list files, read a file, read a help page, check `git status`.
+- **Write tools** change the world: write or edit a file, run a shell command, make a commit.
+]
+
+.pull-right[
+## A tool is just a function
+
+Here's a calculator. It evaluates an expression in an environment that contains only arithmetic.
+
+
+``` r
+R&gt; calculator &lt;- function(code) {
++   math_env &lt;- new.env(parent = emptyenv())
++   ops &lt;- c("+", "-", "*", "/", 
++            "^", "(", "sqrt", "exp", "log")
++   walk(ops, 
++        \(op) assign(op, 
++                     get(op, envir = baseenv()), 
++                     envir = math_env))
++   eval(parse(text = code), envir = math_env)
++ }
+R&gt; calculator("20598162 * 83106206") |&gt; 
++   format(big.mark = ",", scientific = FALSE)
+```
+
+```
+   [1] "1,711,835,094,393,372"
+```
+
+Give the model this and it gets the multiplication right.
+]
+
+
+---
+# Agents
+
+## "An agent is an LLM, in a harness, that calls tools repeatedly in a loop."
+
+&lt;br&gt;
+```
+You      →  Harness:  "Plot donors by year for each country"
+Harness  →  Model:    prompt + tool definitions
+Model    →  Harness:  tool request: describe organdata
+Harness  →  Model:    tool result: columns, types, ranges
+Model    →  Harness:  tool request: run this ggplot code
+Harness  →  Model:    tool result: error, no column 'donor'
+Model    →  Harness:  tool request: run the corrected code
+Harness  →  Model:    tool result: success
+Model    →  Harness:  final answer
+Harness  →  You:      "Here's the plot ..."
+```
+
+The loop: **read**, **act**, **read again** to check what happened, decide what to do next.
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+.footnote[`Credit` Hadley Wickham, [What is an agent?](https://substack.hadley.nz/p/what-is-an-agent)]
+
+
+
+---
+# Why tools improve the output
+
+.pull-left[
+## Four reasons
+
+1. **Ground truth instead of plausible guesses**: Tools give the model facts to work with, such as the result from a calculator or the help page for the version of `dplyr` you actually have installed.
+2. **Current information**: The model's knowledge stops at its training cutoff. Tools let it look up today's date, recent package release notes, or anything else on the web.
+3. **Verification**: The model can run the code and the tests, render the document, look at the error, and try again.
+4. **Acting, not just suggesting**: The model edits the file directly instead of handing you a snippet to paste.
+]
+
+.pull-right[
+## A coding agent is a handful of tools
+
+1. Read a file
+2. Write a file
+3. Edit part of a file
+4. List files
+5. Search across files
+6. Run a shell command
+
+&lt;div align="center"&gt;
+&lt;img src="pics/agent-trenchcoat.jpg" height=240&gt;
+&lt;/div&gt;
+]
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+.footnote[`Credit` Hadley Wickham, [A coding agent is six functions in a trenchcoat](https://substack.hadley.nz/p/a-coding-agent-is-six-functions-in)]
+
+
+
+
+---
+exclude: true
+
+# Agents act
+
+.pull-left[
+## What that means
+
+- Acting on your behalf is what makes an agent useful, and it also means its mistakes have real consequences. You're letting it use your computer.
+- Harnesses offer **permission modes**: ask before every action; allow edits but ask about commands; plan only; or decide automatically.
+- **Sandboxes** restrict which files and which network hosts a command can touch.
+]
+
+.pull-right[
+## "Auto" doesn't mean "careful"
+
+Hadley Wickham asked two coding agents in auto mode to run a script from the internet without reading it.
+
+- Both recognized this was risky.
+- Both ran it anyway, because the user had asked.
+- One disabled its own sandbox when the sandbox got in the way.
+
+The model's judgment is not an effective security device.
+]
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+.footnote[`Credit` Hadley Wickham, [Auto mode knows it's dangerous (and does it anyway)](https://substack.hadley.nz/p/auto-mode-knows-its-dangerous-and). See also the founder whose agent [wiped his production database](https://fortune.com/2025/07/23/ai-coding-tool-replit-wiped-database-called-it-a-catastrophic-failure/) during a code freeze.]
+
+
+
+---
+# Working safely
+
+.pull-left[
+## What sort of data are you analyzing?
+
+- Even with tool calls and local evaluation, you're still talking to a model that is on someone else's computer. Not just code but also data may be exchanged.
+- Are you comfortable with this? Are you *permitted* to do this?
+- What are the rules governing data sharing: licenses, consent, GDPR, your employer?
+- Does the provider assert the right to use your communication as training data?
+]
+
+.pull-right[
+## Practical safeguards
+
+- **Git is your safety net.** Commit before you let an agent loose. Read the diff afterwards.
+- Keep secrets out of reach. `.Renviron` for keys, not scripts.
+- Large datasets: tell the agent to *query* them (`duckdb`, `dbplyr`), not read them.
+- Develop your code on dummy or synthetic data.
+- Start with read-only tools. Add write tools as you gain confidence.
+]
+
+
+
+---
+# Open models, closed models
+
+.pull-left[
+## Spirling's warning
+
+- The most popular models are **proprietary and closed**. Nobody outside knows what they were trained on.
+- Providers can change or retire a model **at any time**. Your result from last year may not replicate.
+- Science ends up depending on "corporations' benevolence".
+- His way forward: **open models**, built and used by researchers. As it happened with R and Python.
+]
+
+.pull-right[
+## What follows for you
+
+- Using an LLM *as a method* (to classify, to annotate)? Document model, version, date, and prompt.
+- Open-weight models can run on your own machine. Your data stays there, and the model stays the same.
+- **Disclose** how you used AI.
+]
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+.footnote[`Source` [Spirling (2023), Open generative AI models are a way forward for science, *Nature* 616: 413](https://www.nature.com/articles/d41586-023-01295-4)]
+
+
+
+---
+# Why you needed this course first
+
+| What you learned | Why it matters now |
+|:-----------------|:-------------------|
+| **Functions, debugging** | You can *read* what was written, and find out why it fails |
+| **Iteration, automation** | You know what should be a loop, a function, a scheduled job |
+| **Command line** | The shell is the agent's main tool. You can follow what it does |
+| **Version control** | Your safety net. The diff tells you what changed |
+| **Web data, scraping, APIs** | The model *is* an API. And you know where data comes from |
+| **Databases** | You make the agent query the data instead of swallowing it |
+| **Modeling** | You notice when the specification doesn't match the question |
+| **Visualization, communication** | You judge whether the presentation works for you (and others?)  |
+| **Ethics** | You decide what may leave your machine |
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+
+
+---
+class: center
+background-image: url("pics/eniac-programmers.jpg")
+background-size: contain
+background-color: #000000
+
+# We have been here before.
+
+&lt;div style="position:absolute; bottom:14px; left:24px; color:#FFFFFF; font-size:60%; background:rgba(0,0,0,0.75); padding:2px 8px;"&gt;ENIAC programmers preparing for Demonstration Day, February 1946. US Army photo, public domain.&lt;/div&gt;
+
+
+---
+background-image: url("pics/fix-what-gpt-told-you.webp")
+background-size: contain
+background-color: #000000
+
+# Your new job slogan
+
+
+
+
+
+
+&lt;!-- ############################################ --&gt;
+---
+class: inverse, center, middle
+name: discussion
+
+# Discussion
+
+&lt;html&gt;&lt;div style='float:left'&gt;&lt;/div&gt;&lt;hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/&gt;&lt;/html&gt;
+
+
+
+---
+# Your turn
+
+.pull-left-wide[
+&lt;br&gt;
+
+### Form groups of four. Each group picks **one** of these questions:
+
+1. **Where do you want to go with this?** How do you want to work with AI tools, and where do you draw the line?
+
+2. **What do you want to take out of this course, and out of the entire master's?** What should you be able to do yourself?
+
+3. **Develop standards for using AI tools in data science practice.** What should be disclosed, checked, forbidden?
+]
+
+.pull-right-small-center[
+&lt;div align="center"&gt;
+&lt;br&gt;&lt;br&gt;
+&lt;img src="pics/breakout-time.jpeg" height=350&gt;
+&lt;/div&gt;
+]
+
+
+
+---
+class: inverse, center, middle
+
+# Evaluation time!
+
+
+
+&lt;!-- ############################################ --&gt;
+---
+class: inverse, center, middle
+name: ellmer
+
+# Bonus: LLMs in R with ellmer
+
+&lt;html&gt;&lt;div style='float:left'&gt;&lt;/div&gt;&lt;hr color='#EB811B' size=1px style="width:1000px; margin:auto;"/&gt;&lt;/html&gt;
+
+
+---
+# Subscription vs. API
+
+|                | Subscription                              | API                                       |
+|:---------------|:------------------------------------------|:------------------------------------------|
+| **You pay**        | A flat monthly fee                        | Per token, input and output               |
+| **Limits**         | Usage caps that reset over time windows   | Rate limits, plus spend limits you set    |
+| **Credentials**    | Log in with your account                  | An API key, e.g. `ANTHROPIC_API_KEY`      |
+| **Harness**        | The provider's: chat app, desktop, coding agent | Anything: `ellmer`, your own code   |
+| **Good for**       | Interactive work                          | Programs, pipelines, batch jobs, apps     |
+
+.pull-left[
+## Bring the LLM to R
+
+- With `ellmer`, your R session becomes the harness.
+- You need an API key or a local model.
+- This is the way to go if the LLM is part of your analysis, e.g. when classifying 10,000 open-ended survey responses.
+]
+
+.pull-right[
+## Bring R to the LLM
+
+- An existing harness, like Claude Code or Posit Assistant, calls R through tools.
+- This works with a subscription.
+- This is the way to go for interactive work: writing, checking, and fixing code with your data and your packages.
+]
+
+
+
+
+---
+# Key ellmer functions
+
+.pull-left-wide[
+With `ellmer`, you can talk to LLMs from within R. There are five key things that you need to learn.&lt;sup&gt;1&lt;/sup&gt;
+
+1. `chat_*()`: Create a chat object for a provider and a model.
+
+2. `$chat()`: Send a prompt and get an answer. The chat object keeps track of the conversation.
+
+3. System prompts and `interpolate()`: Tell the model how to behave and build prompts from data.
+
+4. `$chat_structured()` and `type_*()`: Extract structured data instead of prose.
+
+5. `tool()` and `$register_tool()`: Let the model call your R functions.
+
+]
+
+.pull-right-small-center[
+&lt;div align="center"&gt;
+&lt;br&gt;
+&lt;img src="pics/ellmer.png" height=250&gt;
+&lt;/div&gt;
+]
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+.footnote[
+&lt;sup&gt;1&lt;/sup&gt; There is much more in `ellmer`. Have a glimpse at the [overview at ellmer.tidyverse.org](https://ellmer.tidyverse.org/) and at the vignettes, which this section builds on.
+]
+
+
+
+---
+# chat_*()
+
+We start by creating a chat object, which connects to one provider and one model. The interface is the same across providers.
+
+
+``` r
+R&gt; library(ellmer)
+R&gt; 
+R&gt; chat &lt;- chat_ollama(model = "gemma3:12b")    # local, open weights
+R&gt; chat &lt;- chat_anthropic()                     # needs ANTHROPIC_API_KEY
+R&gt; chat &lt;- chat_openai()                        # needs OPENAI_API_KEY
+R&gt; chat &lt;- chat_google_gemini()                 # needs GEMINI_API_KEY
+R&gt; chat &lt;- chat_mistral()                       # needs MISTRAL_API_KEY
+```
+
+*Note:* API keys are secrets. Keep them in `~/.Renviron` (which you can open with `usethis::edit_r_environ()`), never in a script, and never in a git repository.
+
+The examples that follow run with `gemma3`, an open-weight model, on my laptop. This requires no API key, comes at no cost, and no data leaves the machine. To follow along, install [Ollama](https://ollama.com) and run `ollama pull gemma3:12b` in the terminal.
+
+
+
+---
+# $chat()
+
+Let's ask a first question.
+
+
+``` r
+R&gt; chat &lt;- chat_ollama(model = "gemma3:12b", system_prompt = "Be terse.")
+R&gt; chat$chat("Who created R?")
+```
+
+```
+Ross Ihaka and Robert Gentleman.
+```
+
+The chat object is stateful: It keeps all previous turns and re-sends them with every request. This is why follow-up questions work.
+
+
+``` r
+R&gt; chat$chat("And when?")
+```
+
+```
+1990s.
+```
+
+*Note:* `chat` is an R6 object, which is why we call its methods with `$`. It is modified in place, so there is no need to assign the result.
+
+
+
+---
+# $chat() *cont.*
+
+Printing the chat object shows us what is sent to the model: the entire conversation, together with token counts.
+
+
+``` r
+R&gt; chat
+```
+
+```
+&lt;Chat Ollama/gemma3:12b turns=5 input=50+18 output=15&gt;
+-- system --------------------------------------------------------------
+Be terse.
+-- user ----------------------------------------------------------------
+Who created R?
+-- assistant [input=23 output=8] ---------------------------------------
+Ross Ihaka and Robert Gentleman.
+-- user ----------------------------------------------------------------
+And when?
+-- assistant [input=27+18 output=7] ------------------------------------
+1990s.
+```
+
+Use `token_usage()` to check how many tokens you have used in the session, and `live_console(chat)` to chat interactively in the console.
+
+
+
+---
+# System prompts
+
+The system prompt defines the general behavior of the model. The user prompt then asks the specific question.
+
+
+``` r
+R&gt; chat &lt;- chat_ollama(model = "gemma3:12b", system_prompt = "
++   You are an expert R programmer who prefers the tidyverse.
++   Just give me the code. I don't want any explanation or sample data.
++   Use the base pipe, `|&gt;`, not the magrittr pipe `%&gt;%`.
++ ")
+R&gt; chat$chat("How can I compute the mean and median of income, grouped by age and sex?")
+```
+
+```r
+library(dplyr)
+
+compute_income_stats &lt;- function(data) {
+  data |&gt;
+    group_by(age, sex) |&gt;
+    summarize(
+      mean_income = mean(income, na.rm = TRUE),
+      median_income = median(income, na.rm = TRUE)
+    )
+}
+```
+
+
+
+---
+# System prompts *cont.*
+
+.pull-left[
+## Prompt design
+
+- **Be explicit**: If there is something about the output that you don't like, say what you want instead.
+- **Teach it about new features**: If you want the model to use recent functions or a certain coding style, tell it so.
+- **Give examples** of the input and the output you want.
+- **Iterate**: Keep a small set of challenging examples and re-check them whenever you change the prompt.
+]
+
+.pull-right[
+## Prompts are code
+
+- Put each prompt in its own file, e.g. `prompt.md` or `prompt-classify.md`.
+- Write prompts in Markdown.
+- Put them under version control.
+- Insert dynamic data with `interpolate()`, which works like `glue` but with double braces:
+
+```r
+country &lt;- "New Zealand"
+interpolate("What's the capital of {{country}}?")
+```
+
+```
+[1] │ What's the capital of New Zealand?
+```
+]
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+.footnote[`Credit` [ellmer vignette on prompt design](https://ellmer.tidyverse.org/articles/prompt-design.html)]
+
+
+
+---
+# $chat_structured()
+
+When we use an LLM to extract information from text, we want **data** back, not prose. To that end, we tell the model which type of object to return.
+
+
+``` r
+R&gt; chat &lt;- chat_ollama(model = "gemma3:12b")
+R&gt; chat$chat_structured(
++   "My name is Susan and I'm 13 years old",
++   type = type_object(
++     name = type_string(),
++     age = type_number()
++   )
++ ) |&gt; str()
+```
+
+```
+List of 2
+ $ name: chr "Susan"
+ $ age : int 13
+```
+
+The answer follows the type specification, and `ellmer` converts it into an R data structure.
+
+
+
+---
+# $chat_structured() *cont.*
+
+.pull-left[
+## Type specifications
+
+| Function | Returns |
+|:---------|:--------|
+| `type_string()` | a string |
+| `type_number()`, `type_integer()` | a number |
+| `type_boolean()` | `TRUE` or `FALSE` |
+| `type_enum()` | one of a fixed set of values |
+| `type_array()` | a vector or list |
+| `type_object()` | a named list, or a row |
+
+*Note:* An array of objects is returned as a **data frame**.
+]
+
+.pull-right[
+## Good to know
+
+- Every type takes a **description**. The model reads it, so it pays off to write it carefully.
+- By default, all fields are required. If the information is not in the text, the model may **invent a value**.
+- Use `required = FALSE` for anything that might be missing. You then get `NA` instead.
+
+```r
+type_object(
+  name = type_string(required = FALSE),
+  age = type_integer("Age, in years.",
+                     required = FALSE)
+)
+```
+]
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+.footnote[`Credit` [ellmer vignette on structured data](https://ellmer.tidyverse.org/articles/structured-data.html)]
+
+
+
+---
+# $chat_structured() *cont.*
+
+A common use case in the social sciences is the coding of open-ended survey answers. Let's try this with answers to the question *"What is the most important problem facing Germany today?"*
+
+
+``` r
+R&gt; answers &lt;- c(
++   "Rents in Berlin are insane. I spend half my salary on a one-room flat.",
++   "The trains are never on time and the bridges are falling apart.",
++   "Too many people come here and the government has lost control.",
++   "Honestly, I think things are going pretty well.",
++   "We are doing far too little about the climate crisis.",
++   "Groceries and energy cost so much more than three years ago."
++ )
+R&gt; 
+R&gt; type_answer &lt;- type_object(
++   topic = type_enum(
++     c("housing", "infrastructure", "migration", "climate", "cost of living", "other"),
++     "Most important problem mentioned"
++   ),
++   sentiment = type_enum(c("negative", "neutral", "positive")),
++   confidence = type_number("Confidence in the topic label, 0 to 1")
++ )
+```
+
+
+
+---
+# $chat_structured() *cont.*
+
+With `parallel_chat_structured()`, we can send many prompts at once. It returns a tibble with one row per prompt.
+
+
+``` r
+R&gt; chat &lt;- chat_ollama(model = "gemma3:12b", system_prompt = "You code answers to the
++   survey question 'What is the most important problem facing Germany today?'")
+R&gt; parallel_chat_structured(chat, as.list(answers), type = type_answer)
+```
+
+```
+# A tibble: 6 × 3
+  topic          sentiment confidence
+  &lt;fct&gt;          &lt;fct&gt;          &lt;dbl&gt;
+1 housing        negative        0.95
+2 infrastructure negative        0.95
+3 migration      negative        0.95
+4 other          positive        0.95
+5 climate        negative        0.95
+6 cost of living negative        0.95
+```
+
+*Note:* The model reports a `confidence` of 0.95 for every single answer. Don't mistake this for a calibrated probability. Importantly, validate labels like these against a hand-coded sample before you use them.
+
+
+
+---
+# tool()
+
+`tool()` wraps an R function with a name, a description, and its arguments. Let's register the calculator from before.
+
+
+``` r
+R&gt; chat &lt;- chat_anthropic()
+R&gt; chat$register_tool(tool(
++   calculator,
++   name = "calculator",
++   description = "Evaluate a mathematical expression. Use this for any
++     arithmetic, since you can't reliably compute it yourself.",
++   arguments = list(code = type_string("An expression, e.g. '1 + 2 * 3'."))
++ ))
+R&gt; chat$chat("What's 20598162 * 83106206?")
+```
+
+```
+◯ [tool call] calculator(code = "20598162 * 83106206")
+● #&gt; 1711835094393372
+20598162 × 83106206 = 1,711,835,094,393,372.
+```
+
+The model requests the tool, your R session runs the function, and the result goes back to the model as text.&lt;sup&gt;1&lt;/sup&gt;
+
+.footnote[&lt;sup&gt;1&lt;/sup&gt; Example from [Hadley Wickham](https://substack.hadley.nz/p/your-llm-cant-math-and-thats-ok). `gemma3` via Ollama does not support tool calling.]
+
+
+
+---
+# Other ellmer goodies
+
+.pull-left[
+## Programming with ellmer
+
+- Chat objects are modified in place. Inside functions, work on a copy with `chat$clone()`.
+- `echo = "none"` turns off streaming to the console and returns the answer as a string.
+- `parallel_chat()` sends many prompts at once. `batch_chat()` submits large jobs to the provider's batch service.
+- `chat$get_turns()` returns the full conversation, including tool calls.
+- `chat$stream()` and `chat$chat_async()` are useful for Shiny apps. See also [`shinychat`](https://posit-dev.github.io/shinychat/).
+]
+
+.pull-right[
+## Related packages
+
+- [`btw`](https://posit-dev.github.io/btw/): Describe R objects, documentation, and your session to an LLM.
+- [`ragnar`](https://ragnar.tidyverse.org/): Retrieval-augmented generation.
+- [`vitals`](https://vitals.tidyverse.org/): Evaluate LLM applications.
+- [`mcptools`](https://posit-dev.github.io/mcptools/): Connect R to coding agents, and vice versa.
+- [`chatlas`](https://posit-dev.github.io/chatlas/): The Python sibling of `ellmer`.
+]
+
+&lt;div class="clear"&gt;&lt;/div&gt;
+
+.footnote[`Credit` ellmer vignettes on [programming](https://ellmer.tidyverse.org/articles/programming.html), [tool calling](https://ellmer.tidyverse.org/articles/tool-calling.html), and [streaming and async](https://ellmer.tidyverse.org/articles/streaming-async.html)]
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+  "highlightStyle": "github",
+  "highlightLines": true,
+  "countIncrementalSlides": false,
+  "ratio": "16:9",
+  "hash": true
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+<style>
+  .logo {
+    background-image: url("../hertieschool-neg.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    position: absolute;
+    top: 1.5em;
+    right: 1em;
+    width: 150px;
+    height: 128px;
+    z-index: 0;
+  }
+</style>
+  
+  <script>
+  document
+.querySelectorAll(
+  '.remark-slide-content' +
+    ':not(.title-slide)' +
+    ':not(.inverse)' +
+	
+    // add additional classes to exclude here, e.g.
+  // ':not(.inverse)' +
+    ':not(.hide-logo)'
+)
+.forEach(el => {
+  el.innerHTML += '<div class="logo"></div>';
+});
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
