@@ -114,9 +114,6 @@ name: reality
 
 &lt;div class="clear"&gt;&lt;/div&gt;
 
-**Again, think about this:** Software postings are 18% below early 2020. All postings are about 6% above. But also, the fall for SD began **before ChatGPT**.
-
-
 
 
 ---
@@ -143,6 +140,18 @@ name: reality
 
 
 
+---
+# Ok, one last time
+
+&lt;div align="center"&gt;
+&lt;img src="pics/data-science-with-ai.svg" height=400&gt;
+&lt;/div&gt;
+
+&lt;div align="right"&gt;
+&lt;img src="pics/wickham-sunglasses.jpeg" height=150&gt;
+&lt;/div&gt;
+
+
 
 
 ---
@@ -151,13 +160,13 @@ name: reality
 .pull-left-wide[
 ## Then
 
-- Write a codebook, hire and train coders, wait for weeks, pay per label
+- Write a codebook, hire and train coders, wait for weeks, pay per hour/label
 
 ## Now
 
 - Write a codebook as prompt, let the chatbot label 10k texts overnight.
 - [Gilardi et al. 2023](https://doi.org/10.1073/pnas.2305016120): Less than $0.003 per label, about **30 times cheaper** than crowd workers, and more accurate in one early comparison
-- But - [Baumann et al. 2025](https://arxiv.org/abs/2509.08825): LLM labels are not ground truth: rerun 21 published studies with 18 LLMs as annotators, and for about a third of the hypotheses the conclusion comes out wrong.
+- But - [Baumann et al. 2025](https://arxiv.org/abs/2509.08825): LLM labels are not ground truth: reran 21 published studies with 18 LLMs as annotators and find that results are sensitive to LLM hacking (intentional and incidental).
 - [Egami et al. 2023](https://arxiv.org/abs/2306.04746): Even labels that are 80 to 90% accurate bias downstream estimates. Correct for it with a hand-coded validation sample.
 ]
 
@@ -205,6 +214,8 @@ survey |&gt;
 
 
 ---
+exclude: true
+
 # New workflows: the full analysis
 
 .pull-left-wide[
@@ -260,13 +271,13 @@ survey |&gt;
 ## AI as reviewer
 
 - [King and Worthington 2026](https://gking.harvard.edu/peerless/): 124 paper drafts, each with a review by a **well-paid human expert** and a review by an AI model.
-- Blind judges prefer the AI review in **87 to 100%** of the pairs, overall and in every review area. No fabricated sources, and about a third of the human rate of incorrect claims.
-- The largest deployment so far: the AAAI-26 conference added one labeled AI review to each of its 22,977 papers under full review.
+- Blind judges prefer the AI review in **87 to 100%** of the pairs, overall and in every review area. There were no fabricated sources, and about a third of the human rate of incorrect claims.
+- This is being rolled out at scale: the AAAI-26 conference added one labeled AI review to each of its 22,977 papers under full review.
 
 ## But
 
-- The main judge was another AI model, backed by a sample of former journal editors.
-- Not measured: whether the paper gets **better**, and what happens to science if everybody switches.
+- Personally, I have seen AI slop in reviews, and it's incredibly frustrating.
+- The sociological consequences of this are very much unclear.
 ]
 
 .pull-right-small[
